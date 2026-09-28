@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using System.Buffers.Binary;
+using System.IO;
 using TheSingularityWorkshop.FSM_Serialization;
 
 namespace FSM_Serialization_Benchmarks;
