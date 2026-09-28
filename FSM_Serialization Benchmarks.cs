@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
+using System;
 using System.Buffers.Binary;
 using System.IO;
 using TheSingularityWorkshop.FSM_Serialization;
@@ -139,7 +140,7 @@ public class FSMSerializationBenchmarks
     [Benchmark(Baseline = true)]
     public void MemoryStream_PositionOverwrite()
     {
-        using var stream = new MemoryStream(_data.ToArray());
+        using var stream = new MemoryStream(_data.AsSpan().ToArray());
         stream.Position = Size / 2;
         stream.WriteByte(0x7F);
     }
@@ -147,7 +148,7 @@ public class FSMSerializationBenchmarks
     [Benchmark]
     public void MemoryBinaryStream_PositionOverwrite()
     {
-        using var stream = new MemoryBinaryStream(_data.ToArray());
+        using var stream = new MemoryBinaryStream(_data.AsSpan().ToArray());
         stream.Position = Size / 2;
         stream.Write([0x7F]);
     }
