@@ -28,7 +28,7 @@ public abstract class FSMSerializationBenchmarkBase
     }
 }
 
-public sealed class ConstructionBenchmarks : FSMSerializationBenchmarkBase
+public class ConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public MemoryStream MemoryStream_Construct() => new();
@@ -41,7 +41,7 @@ public sealed class ConstructionBenchmarks : FSMSerializationBenchmarkBase
         => new(new MemoryStream());
 }
 
-public sealed class WriteBenchmarks : FSMSerializationBenchmarkBase
+public class WriteBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public MemoryStream MemoryStream_Write()
@@ -68,7 +68,7 @@ public sealed class WriteBenchmarks : FSMSerializationBenchmarkBase
     }
 }
 
-public sealed class ReadBenchmarks : FSMSerializationBenchmarkBase
+public class ReadBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public int MemoryStream_Read()
@@ -93,7 +93,7 @@ public sealed class ReadBenchmarks : FSMSerializationBenchmarkBase
     }
 }
 
-public sealed class ExistingDataConstructionBenchmarks : FSMSerializationBenchmarkBase
+public class ExistingDataConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public MemoryStream MemoryStream_ConstructWithData()
@@ -104,7 +104,7 @@ public sealed class ExistingDataConstructionBenchmarks : FSMSerializationBenchma
         => new(Data);
 }
 
-public sealed class ToArrayBenchmarks : FSMSerializationBenchmarkBase
+public class ToArrayBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public byte[] MemoryStream_ToArray()
@@ -123,7 +123,7 @@ public sealed class ToArrayBenchmarks : FSMSerializationBenchmarkBase
     }
 }
 
-public sealed class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
+public class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
     public void MemoryStream_PositionOverwrite()
@@ -142,7 +142,7 @@ public sealed class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
     }
 }
 
-public sealed class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
+public class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark]
     public int BinarySerializable_RoundTrip()
