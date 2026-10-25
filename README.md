@@ -23,7 +23,7 @@ This repository is the evidence harness for `TheSingularityWorkshop.FSM_Serializ
 - Fixed-width UInt32 versus ULEB128 encode-only microbenchmarks, with setup-time round-trip validation over small, mixed and large-value distributions.
 - Payload sizes 16 B, 1 KiB, 10 KB and 100 KB for the shared parameterized suites.
 
-The current project references the published `TheSingularityWorkshop.FSM_Serialization` NuGet package at `0.1.0-alpha.2`. Keep this as the published-package lane until a deliberate version change is made. A source-build lane, if added, must be named and reported separately.
+The harness now has two explicitly separated lanes. The **published-package baseline** remains pinned to `TheSingularityWorkshop.FSM_Serialization` NuGet `0.1.0-alpha.2`; preserve it for consumer compatibility and historical comparisons. The **development-source lane** checks out `TrentBest/TheSingularityWorkshop.FSM_Serialization` at `development` (or the exact source SHA sent by the observer), runs its tests first, then benchmarks a direct project reference. Its artifact records the source commit. Never compare or combine the two lanes as if they were the same build.
 
 ## Run
 
@@ -48,4 +48,4 @@ For the full suite, omit the filter. BenchmarkDotNet's generated artifacts shoul
 
 ## Readiness
 
-**Benchmark harness readiness: 40% (provisional).** Stable IDs/catalog, initial buffer-strategy cases, integer encoding comparisons, setup-time correctness validation, and a successful Windows/.NET 8 CI benchmark run are in place. FSM definition codecs, dedicated integer decode/round-trip timings, string/reference/layout technique comparisons, mature serializer adapters, automated result interpretation, and change-triggered observation remain outstanding. This is a harness implementation estimate, not a serialization package release-readiness percentage.
+**Benchmark harness readiness: 40% (provisional).** Stable IDs/catalog, initial buffer-strategy cases, integer encoding comparisons, setup-time correctness validation, and a successful Windows/.NET 8 CI benchmark run are in place. FSM definition codecs, dedicated integer decode/round-trip timings, string/reference/layout technique comparisons, mature serializer adapters, automated result interpretation, and verification of the cross-repository dispatch remain outstanding. This is a harness implementation estimate, not a serialization package release-readiness percentage.
