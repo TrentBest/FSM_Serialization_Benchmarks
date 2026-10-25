@@ -59,14 +59,16 @@ The two pool cases intentionally include rent and return on every invocation. Th
 |---|---|---|
 | SER-INT-001 | `IntegerEncodingBenchmarks.SER_INT_001_FixedWidthUInt32` | Fixed-width little-endian UInt32 output; 4 bytes per value |
 | SER-INT-002 | `IntegerEncodingBenchmarks.SER_INT_002_Uleb128UInt32` | ULEB128 output; variable length per value |
+| SER-INT-003 | `IntegerDecodingBenchmarks.SER_INT_003_FixedWidthUInt32_Decode` | Decode fixed-width little-endian UInt32 values from a prebuilt payload |
+| SER-INT-004 | `IntegerDecodingBenchmarks.SER_INT_004_Uleb128UInt32_Decode` | Decode ULEB128 UInt32 values from a prebuilt payload; includes no fixture encoding in timed work |
 
-The integer suite uses explicit small, mixed and large-value distributions. It reports both time/allocations and output length, since these encodings trade size against CPU cost. Its global setup independently validates fixed-width round trips and ULEB128 encode/decode values before timed runs; correctness work is excluded from the measured methods. Dedicated decode-only and full encode/decode benchmark IDs remain outstanding.
+The integer suite uses explicit small, mixed and large-value distributions. Encoding and decoding are separate operations, with decode fixtures built during setup. The ULEB128 decoder setup gate checks valid round trips and rejects truncated input, UInt32 overflow, and overlong continuation sequences. Correctness checks are excluded from timed methods. A full end-to-end encode/decode round-trip benchmark remains outstanding.
 
 ## Planned families — reserve IDs when implementation lands
 
 | Family | ID range | Cases to add |
 |---|---|---|
-| Additional integer encoding | SER-INT-003… | signed zigzag, decode-only and round-trip cases, broader boundary/property tests |
+| Additional integer encoding | SER-INT-005… | signed zigzag, full encode/decode round-trip cases, broader boundary/property tests |
 | Strings | SER-STRG-001… | UTF-8 length-prefixed strings, repeated strings, string-table/local-index representation |
 | References and tables | SER-REF-001… | external/sparse IDs mapped to dense local indices, explicit tables, forward references |
 | Layout and sizing | SER-LAY-001… | one-pass growth, exact two-pass sizing, backpatch/fixup; same canonical bytes where promised |
