@@ -5,16 +5,19 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+  repository_dispatch:
+    types: [serialization-development-changed]
 
 permissions:
   contents: read
 
 concurrency:
-  group: serialization-benchmarks-${{ github.ref }}
+  group: serialization-benchmarks-${{ github.ref }}-${{ github.event.action || github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  benchmark:
+  published-package:
+    name: Published NuGet baseline (pinned)
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -32,6 +35,9 @@ jobs:
           dotnet --info | Out-File -FilePath environment.txt -Encoding utf8
           Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
           Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "BenchmarkLane=published-nuget" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "PackageVersion=0.1.0-alpha.2" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "HarnessCommit=${{ github.sha }}" | Out-File -Append -FilePath environment.txt -Encoding utf8
 
       - name: Restore
         run: dotnet restore FSM_Serialization_Benchmarks.slnx
@@ -46,7 +52,67 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: serialization-benchmark-${{ github.sha }}
+          name: serialization-benchmark-published-${{ github.sha }}
+          path: |
+            BenchmarkDotNet.Artifacts/**
+            environment.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+  development-source:
+    name: FSM_Serialization development source
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout benchmark harness
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout FSM_Serialization source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: TrentBest/TheSingularityWorkshop.FSM_Serialization
+          ref: ${{ github.event.client_payload.source_sha || 'development' }}
+          path: source
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Record source identity and runner environment
+        shell: pwsh
+        run: |
+          $sourceSha = git -C source rev-parse HEAD
+          "BenchmarkLane=development-source" | Out-File -FilePath environment.txt -Encoding utf8
+          "SourceRepository=TrentBest/TheSingularityWorkshop.FSM_Serialization" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "SourceRef=${{ github.event.client_payload.source_ref || 'development' }}" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "SourceCommit=$sourceSha" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          "HarnessCommit=${{ github.sha }}" | Out-File -Append -FilePath environment.txt -Encoding utf8
+          dotnet --info | Out-File -Append -FilePath environment.txt -Encoding utf8
+          Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
+
+      - name: Restore source solution
+        run: dotnet restore source/TheSingularityWorkshop.FSM_Serialization.slnx
+
+      - name: Test current source before benchmarking
+        run: dotnet test source/TheSingularityWorkshop.FSM_Serialization.slnx --configuration Release --no-restore
+
+      - name: Restore benchmark harness against source project
+        run: dotnet restore FSM_Serialization_Benchmarks.slnx -p:UseSerializationSource=true
+
+      - name: Build benchmark harness against source project
+        run: dotnet build FSM_Serialization_Benchmarks.slnx --configuration Release --no-restore -p:UseSerializationSource=true
+
+      - name: Run stable-ID benchmark suite against source
+        run: dotnet run --project FSM_Serialization_Benchmarks.csproj --configuration Release --no-build -p:UseSerializationSource=true -- --filter "*SER_*"
+
+      - name: Preserve raw development-source evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: serialization-benchmark-development-${{ github.event.client_payload.source_sha || github.sha }}
           path: |
             BenchmarkDotNet.Artifacts/**
             environment.txt
