@@ -271,3 +271,64 @@ public class OutputBufferStrategyBenchmarks
         }
     }
 }
+
+
+/// <summary>
+/// Compares two unsigned integer encodings over identical value sequences.
+/// The encoded byte counts intentionally differ; timing and output size are
+/// both useful metrics, and the workload distribution is explicit.
+/// </summary>
+[MemoryDiagnoser]
+[SimpleJob(RuntimeMoniker.Net80)]
+[BenchmarkCategory("SER-INT")]
+public class IntegerEncodingBenchmarks
+{
+    [Params("Small", "Mixed", "Large")]
+    public string Distribution { get; set; } = "Small";
+
+    private uint[] _values = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _values = Distribution switch
+        {
+            "Small" => new uint[] { 0, 1, 2, 7, 15, 31, 63, 127 },
+            "Mixed" => new uint[] { 0, 1, 127, 128, 255, 16_383, 16_384, 65_535, 1_000_000 },
+            "Large" => new uint[] { 0, 127, 128, 16_383, 16_384, 1_000_000, 0x7FFF_FFFF, 0xFFFF_FFFF },
+            _ => throw new InvalidOperationException($"Unknown distribution: {Distribution}")
+        };
+    }
+
+    [Benchmark]
+    public int SER_INT_001_FixedWidthUInt32()
+    {
+        byte[] output = new byte[checked(_values.Length * sizeof(uint))];
+        for (int i = 0; i < _values.Length; i++)
+            BinaryPrimitives.WriteUInt32LittleEndian(output.AsSpan(i * sizeof(uint), sizeof(uint)), _values[i]);
+        return output.Length;
+    }
+
+    [Benchmark]
+    public int SER_INT_002_Uleb128UInt32()
+    {
+        byte[] output = new byte[checked(_values.Length * 5)];
+        int offset = 0;
+        foreach (uint value in _values)
+            offset += WriteUleb128(value, output.AsSpan(offset));
+        return offset;
+    }
+
+    private static int WriteUleb128(uint value, Span<byte> destination)
+    {
+        int written = 0;
+        while (value >= 0x80)
+        {
+            destination[written++] = (byte)(value | 0x80);
+            value >>= 7;
+        }
+
+        destination[written++] = (byte)value;
+        return written;
+    }
+}
