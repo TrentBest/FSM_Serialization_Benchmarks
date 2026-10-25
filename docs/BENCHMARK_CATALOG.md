@@ -60,7 +60,7 @@ The two pool cases intentionally include rent and return on every invocation. Th
 | SER-INT-001 | `IntegerEncodingBenchmarks.SER_INT_001_FixedWidthUInt32` | Fixed-width little-endian UInt32 output; 4 bytes per value |
 | SER-INT-002 | `IntegerEncodingBenchmarks.SER_INT_002_Uleb128UInt32` | ULEB128 output; variable length per value |
 
-The integer suite uses explicit small, mixed and large-value distributions. It reports both time/allocations and output length, since these encodings trade size against CPU cost. This is an encode-only microbenchmark; decoder and round-trip cases are still outstanding.
+The integer suite uses explicit small, mixed and large-value distributions. It reports both time/allocations and output length, since these encodings trade size against CPU cost. Its global setup independently validates fixed-width round trips and ULEB128 encode/decode values before timed runs; correctness work is excluded from the measured methods. Dedicated decode-only and full encode/decode benchmark IDs remain outstanding.
 
 ## Planned families — reserve IDs when implementation lands
 
