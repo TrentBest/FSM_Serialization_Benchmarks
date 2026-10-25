@@ -31,20 +31,20 @@ public abstract class FSMSerializationBenchmarkBase
 public class ConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public MemoryStream MemoryStream_Construct() => new();
+    public MemoryStream SER_STR_001_MemoryStream_Construct() => new();
 
     [Benchmark]
-    public MemoryBinaryStream MemoryBinaryStream_Construct() => new();
+    public MemoryBinaryStream SER_STR_002_MemoryBinaryStream_Construct() => new();
 
     [Benchmark]
-    public StreamBinaryStream StreamBinaryStream_Construct()
+    public StreamBinaryStream SER_STR_003_StreamBinaryStream_Construct()
         => new(new MemoryStream());
 }
 
 public class WriteBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public MemoryStream MemoryStream_Write()
+    public MemoryStream SER_WRT_001_MemoryStream_Write()
     {
         var stream = new MemoryStream();
         stream.Write(Data);
@@ -52,7 +52,7 @@ public class WriteBenchmarks : FSMSerializationBenchmarkBase
     }
 
     [Benchmark]
-    public MemoryBinaryStream MemoryBinaryStream_Write()
+    public MemoryBinaryStream SER_WRT_002_MemoryBinaryStream_Write()
     {
         var stream = new MemoryBinaryStream();
         stream.Write(Data);
@@ -60,7 +60,7 @@ public class WriteBenchmarks : FSMSerializationBenchmarkBase
     }
 
     [Benchmark]
-    public StreamBinaryStream StreamBinaryStream_Write()
+    public StreamBinaryStream SER_WRT_003_StreamBinaryStream_Write()
     {
         var stream = new StreamBinaryStream(new MemoryStream());
         stream.Write(Data);
@@ -71,21 +71,21 @@ public class WriteBenchmarks : FSMSerializationBenchmarkBase
 public class ReadBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public int MemoryStream_Read()
+    public int SER_RD_001_MemoryStream_Read()
     {
         using var stream = new MemoryStream(Data, writable: false);
         return stream.Read(ReadBuffer);
     }
 
     [Benchmark]
-    public int MemoryBinaryStream_Read()
+    public int SER_RD_002_MemoryBinaryStream_Read()
     {
         using var stream = new MemoryBinaryStream(Data);
         return stream.Read(ReadBuffer);
     }
 
     [Benchmark]
-    public int StreamBinaryStream_Read()
+    public int SER_RD_003_StreamBinaryStream_Read()
     {
         using var backing = new MemoryStream(Data, writable: false);
         using var stream = new StreamBinaryStream(backing);
@@ -96,18 +96,18 @@ public class ReadBenchmarks : FSMSerializationBenchmarkBase
 public class ExistingDataConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public MemoryStream MemoryStream_ConstructWithData()
+    public MemoryStream SER_CTR_001_SER_STR_001_MemoryStream_ConstructWithData()
         => new(Data, writable: false);
 
     [Benchmark]
-    public MemoryBinaryStream MemoryBinaryStream_ConstructWithData()
+    public MemoryBinaryStream SER_CTR_002_SER_STR_002_MemoryBinaryStream_ConstructWithData()
         => new(Data);
 }
 
 public class ToArrayBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public byte[] MemoryStream_ToArray()
+    public byte[] SER_ARR_001_MemoryStream_ToArray()
     {
         using var stream = new MemoryStream();
         stream.Write(Data);
@@ -115,7 +115,7 @@ public class ToArrayBenchmarks : FSMSerializationBenchmarkBase
     }
 
     [Benchmark]
-    public byte[] MemoryBinaryStream_ToArray()
+    public byte[] SER_ARR_002_MemoryBinaryStream_ToArray()
     {
         using var stream = new MemoryBinaryStream();
         stream.Write(Data);
@@ -126,7 +126,7 @@ public class ToArrayBenchmarks : FSMSerializationBenchmarkBase
 public class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public void MemoryStream_PositionOverwrite()
+    public void SER_POS_001_MemoryStream_PositionOverwrite()
     {
         using var stream = new MemoryStream(Data.AsSpan().ToArray());
         stream.Position = Size / 2;
@@ -134,7 +134,7 @@ public class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
     }
 
     [Benchmark]
-    public void MemoryBinaryStream_PositionOverwrite()
+    public void SER_POS_002_MemoryBinaryStream_PositionOverwrite()
     {
         using var stream = new MemoryBinaryStream(Data.AsSpan().ToArray());
         stream.Position = Size / 2;
@@ -145,7 +145,7 @@ public class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
 public class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark]
-    public int BinarySerializable_RoundTrip()
+    public int SER_RT_001_BinarySerializable_RoundTrip()
     {
         var value = new BenchmarkValue(Data);
 
