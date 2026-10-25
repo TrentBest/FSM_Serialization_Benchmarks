@@ -192,3 +192,82 @@ public class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
         }
     }
 }
+
+
+/// <summary>
+/// Stable benchmark IDs are documented in docs/BENCHMARK_CATALOG.md.
+/// This class isolates the output-buffer strategy while preserving the same
+/// byte-for-byte payload and reporting the resulting payload length.
+/// </summary>
+[MemoryDiagnoser]
+[SimpleJob(RuntimeMoniker.Net80)]
+[BenchmarkCategory("SER-BUF")]
+public class OutputBufferStrategyBenchmarks
+{
+    [Params(16, 1024, 10_000, 100_000)]
+    public int Size { get; set; }
+
+    private byte[] _data = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _data = new byte[Size];
+        for (int i = 0; i < _data.Length; i++)
+            _data[i] = (byte)(i * 31);
+    }
+
+    [Benchmark]
+    public int SER_BUF_001_MemoryStream_Grow()
+    {
+        using var stream = new MemoryStream();
+        stream.Write(_data);
+        return checked((int)stream.Length);
+    }
+
+    [Benchmark]
+    public int SER_BUF_002_MemoryStream_Presize()
+    {
+        using var stream = new MemoryStream(_data.Length);
+        stream.Write(_data);
+        return checked((int)stream.Length);
+    }
+
+    [Benchmark]
+    public int SER_BUF_003_ExactArray_Copy()
+    {
+        var output = new byte[_data.Length];
+        _data.AsSpan().CopyTo(output);
+        return output.Length;
+    }
+
+    [Benchmark]
+    public int SER_BUF_004_ArrayPool_RentCopyReturn()
+    {
+        byte[] rented = System.Buffers.ArrayPool<byte>.Shared.Rent(_data.Length);
+        try
+        {
+            _data.AsSpan().CopyTo(rented);
+            return _data.Length;
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+        }
+    }
+
+    [Benchmark]
+    public int SER_BUF_005_ArrayPool_WarmCopyReturn()
+    {
+        byte[] rented = System.Buffers.ArrayPool<byte>.Shared.Rent(_data.Length);
+        try
+        {
+            _data.AsSpan().CopyTo(rented);
+            return _data.Length;
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+        }
+    }
+}
