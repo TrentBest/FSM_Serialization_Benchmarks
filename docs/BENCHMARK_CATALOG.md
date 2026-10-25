@@ -20,22 +20,22 @@ IDs identify **what is measured**, not a promise about speed. A new algorithm or
 
 | Stable ID | Current BenchmarkDotNet method | Operation / contract |
 |---|---|---|
-| SER-STR-001 | `ConstructionBenchmarks.MemoryStream_Construct` | Construct an empty BCL `MemoryStream` |
-| SER-STR-002 | `ConstructionBenchmarks.MemoryBinaryStream_Construct` | Construct an empty package `MemoryBinaryStream` |
-| SER-STR-003 | `ConstructionBenchmarks.StreamBinaryStream_Construct` | Construct package `StreamBinaryStream` over a new `MemoryStream` |
-| SER-WRT-001 | `WriteBenchmarks.MemoryStream_Write` | Create stream and write the parameterized payload |
-| SER-WRT-002 | `WriteBenchmarks.MemoryBinaryStream_Write` | Same payload write through package stream |
-| SER-WRT-003 | `WriteBenchmarks.StreamBinaryStream_Write` | Same payload write through package wrapper |
-| SER-RD-001 | `ReadBenchmarks.MemoryStream_Read` | Read from read-only BCL stream into preallocated destination |
-| SER-RD-002 | `ReadBenchmarks.MemoryBinaryStream_Read` | Read through package stream into same-sized destination |
-| SER-RD-003 | `ReadBenchmarks.StreamBinaryStream_Read` | Read through package wrapper into same-sized destination |
-| SER-CTR-001 | `ExistingDataConstructionBenchmarks.MemoryStream_ConstructWithData` | Wrap existing data read-only without copying |
-| SER-CTR-002 | `ExistingDataConstructionBenchmarks.MemoryBinaryStream_ConstructWithData` | Construct package stream from existing data; current implementation may copy |
-| SER-ARR-001 | `ToArrayBenchmarks.MemoryStream_ToArray` | Write payload then materialize a result array |
-| SER-ARR-002 | `ToArrayBenchmarks.MemoryBinaryStream_ToArray` | Same output contract using package stream |
-| SER-POS-001 | `PositionOverwriteBenchmarks.MemoryStream_PositionOverwrite` | Copy input, seek to midpoint and overwrite one byte |
-| SER-POS-002 | `PositionOverwriteBenchmarks.MemoryBinaryStream_PositionOverwrite` | Same logical overwrite using package stream |
-| SER-RT-001 | `SerializationContractBenchmarks.BinarySerializable_RoundTrip` | Pack length + payload, rewind, unpack and return restored length |
+| SER-STR-001 | `ConstructionBenchmarks.SER_STR_001_MemoryStream_Construct` | Construct an empty BCL `MemoryStream` |
+| SER-STR-002 | `ConstructionBenchmarks.SER_STR_002_MemoryBinaryStream_Construct` | Construct an empty package `MemoryBinaryStream` |
+| SER-STR-003 | `ConstructionBenchmarks.SER_STR_003_StreamBinaryStream_Construct` | Construct package `StreamBinaryStream` over a new `MemoryStream` |
+| SER-WRT-001 | `WriteBenchmarks.SER_WRT_001_MemoryStream_Write` | Create stream and write the parameterized payload |
+| SER-WRT-002 | `WriteBenchmarks.SER_WRT_002_MemoryBinaryStream_Write` | Same payload write through package stream |
+| SER-WRT-003 | `WriteBenchmarks.SER_WRT_003_StreamBinaryStream_Write` | Same payload write through package wrapper |
+| SER-RD-001 | `ReadBenchmarks.SER_RD_001_MemoryStream_Read` | Read from read-only BCL stream into preallocated destination |
+| SER-RD-002 | `ReadBenchmarks.SER_RD_002_MemoryBinaryStream_Read` | Read through package stream into same-sized destination |
+| SER-RD-003 | `ReadBenchmarks.SER_RD_003_StreamBinaryStream_Read` | Read through package wrapper into same-sized destination |
+| SER-CTR-001 | `ExistingDataConstructionBenchmarks.SER_STR_001_MemoryStream_ConstructWithData` | Wrap existing data read-only without copying |
+| SER-CTR-002 | `ExistingDataConstructionBenchmarks.SER_STR_002_MemoryBinaryStream_ConstructWithData` | Construct package stream from existing data; current implementation may copy |
+| SER-ARR-001 | `ToArrayBenchmarks.SER_ARR_001_MemoryStream_ToArray` | Write payload then materialize a result array |
+| SER-ARR-002 | `ToArrayBenchmarks.SER_ARR_002_MemoryBinaryStream_ToArray` | Same output contract using package stream |
+| SER-POS-001 | `PositionOverwriteBenchmarks.SER_POS_001_MemoryStream_PositionOverwrite` | Copy input, seek to midpoint and overwrite one byte |
+| SER-POS-002 | `PositionOverwriteBenchmarks.SER_POS_002_MemoryBinaryStream_PositionOverwrite` | Same logical overwrite using package stream |
+| SER-RT-001 | `SerializationContractBenchmarks.SER_RT_001_BinarySerializable_RoundTrip` | Pack length + payload, rewind, unpack and return restored length |
 
 The legacy suite uses `Size` values 16, 1,024, 10,000 and 100,000 bytes. The stream and wrapper cases are useful historical baselines, but their construction, copying, ownership, and output contracts differ in some cases; interpret ratios only after checking the operation contract. Do not silently rewrite old cases to make newer techniques look better.
 
