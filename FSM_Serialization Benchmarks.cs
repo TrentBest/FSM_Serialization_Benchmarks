@@ -298,6 +298,35 @@ public class IntegerEncodingBenchmarks
             "Large" => new uint[] { 0, 127, 128, 16_383, 16_384, 1_000_000, 0x7FFF_FFFF, 0xFFFF_FFFF },
             _ => throw new InvalidOperationException($"Unknown distribution: {Distribution}")
         };
+
+        // Correctness is a setup gate, not part of timed benchmark operations.
+        byte[] fixedWidth = new byte[checked(_values.Length * sizeof(uint))];
+        for (int i = 0; i < _values.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(
+                fixedWidth.AsSpan(i * sizeof(uint), sizeof(uint)), _values[i]);
+            uint decoded = BinaryPrimitives.ReadUInt32LittleEndian(
+                fixedWidth.AsSpan(i * sizeof(uint), sizeof(uint)));
+            if (decoded != _values[i])
+                throw new InvalidOperationException($"Fixed-width round-trip mismatch at index {i}.");
+        }
+
+        byte[] variableWidth = new byte[checked(_values.Length * 5)];
+        int offset = 0;
+        foreach (uint value in _values)
+            offset += WriteUleb128(value, variableWidth.AsSpan(offset));
+
+        int readOffset = 0;
+        for (int i = 0; i < _values.Length; i++)
+        {
+            uint decoded = ReadUleb128(variableWidth.AsSpan(readOffset, offset - readOffset), out int consumed);
+            if (decoded != _values[i])
+                throw new InvalidOperationException($"ULEB128 round-trip mismatch at index {i}.");
+            readOffset += consumed;
+        }
+
+        if (readOffset != offset)
+            throw new InvalidOperationException("ULEB128 decoder did not consume the encoded payload exactly.");
     }
 
     [Benchmark]
@@ -324,11 +353,31 @@ public class IntegerEncodingBenchmarks
         int written = 0;
         while (value >= 0x80)
         {
-            destination[written++] = (byte)(value | 0x80);
+            destination[written++] = (byte)((value & 0x7F) | 0x80);
             value >>= 7;
         }
 
         destination[written++] = (byte)value;
         return written;
+    }
+
+    private static uint ReadUleb128(ReadOnlySpan<byte> source, out int consumed)
+    {
+        uint value = 0;
+        int shift = 0;
+        consumed = 0;
+
+        while (consumed < source.Length && consumed < 5)
+        {
+            byte current = source[consumed++];
+            value |= (uint)(current & 0x7F) << shift;
+
+            if ((current & 0x80) == 0)
+                return value;
+
+            shift += 7;
+        }
+
+        throw new InvalidOperationException("Invalid or truncated ULEB128 value.");
     }
 }
