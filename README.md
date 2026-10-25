@@ -20,6 +20,7 @@ This repository is the evidence harness for `TheSingularityWorkshop.FSM_Serializ
 - Historical BCL `MemoryStream` versus package stream/wrapper operations.
 - Construction, read, write, `ToArray`, position overwrite, and a simple pack/unpack contract.
 - New output-buffer strategy cases: growing/pre-sized `MemoryStream`, exact array copy, pooled buffer return, and pooled buffer clearing.
+- Fixed-width UInt32 versus ULEB128 encode-only microbenchmarks, with setup-time round-trip validation over small, mixed and large-value distributions.
 - Payload sizes 16 B, 1 KiB, 10 KB and 100 KB for the shared parameterized suites.
 
 The current project references the published `TheSingularityWorkshop.FSM_Serialization` NuGet package at `0.1.0-alpha.2`. Keep this as the published-package lane until a deliberate version change is made. A source-build lane, if added, must be named and reported separately.
@@ -47,4 +48,4 @@ For the full suite, omit the filter. BenchmarkDotNet's generated artifacts shoul
 
 ## Readiness
 
-**Benchmark harness readiness: 35% (provisional).** Stable IDs/catalog and initial buffer-strategy cases are committed, but the new code has not yet been compiled or run in this environment. FSM definition codecs, integer/string/reference/layout technique comparisons, mature serializer adapters, automated result retention, and change-triggered observation remain outstanding. This is a harness implementation estimate, not a serialization package release-readiness percentage.
+**Benchmark harness readiness: 40% (provisional).** Stable IDs/catalog, initial buffer-strategy cases, integer encoding comparisons, setup-time correctness validation, and a successful Windows/.NET 8 CI benchmark run are in place. FSM definition codecs, dedicated integer decode/round-trip timings, string/reference/layout technique comparisons, mature serializer adapters, automated result interpretation, and change-triggered observation remain outstanding. This is a harness implementation estimate, not a serialization package release-readiness percentage. This is a harness implementation estimate, not a serialization package release-readiness percentage.
