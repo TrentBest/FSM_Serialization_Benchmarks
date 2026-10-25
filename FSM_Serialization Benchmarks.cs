@@ -96,11 +96,11 @@ public class ReadBenchmarks : FSMSerializationBenchmarkBase
 public class ExistingDataConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
     [Benchmark(Baseline = true)]
-    public MemoryStream SER_CTR_001_SER_STR_001_MemoryStream_ConstructWithData()
+    public MemoryStream SER_CTR_001_MemoryStream_ConstructWithData()
         => new(Data, writable: false);
 
     [Benchmark]
-    public MemoryBinaryStream SER_CTR_002_SER_STR_002_MemoryBinaryStream_ConstructWithData()
+    public MemoryBinaryStream SER_CTR_002_MemoryBinaryStream_ConstructWithData()
         => new(Data);
 }
 
