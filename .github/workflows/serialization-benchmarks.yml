@@ -1,0 +1,54 @@
+name: Serialization Benchmark Evidence
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: serialization-benchmarks-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout benchmark harness
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Record runner environment
+        shell: pwsh
+        run: |
+          dotnet --info | Out-File -FilePath environment.txt -Encoding utf8
+          Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber | Format-List | Out-File -Append -FilePath environment.txt -Encoding utf8
+
+      - name: Restore
+        run: dotnet restore FSM_Serialization_Benchmarks.slnx
+
+      - name: Build Release
+        run: dotnet build FSM_Serialization_Benchmarks.slnx --configuration Release --no-restore
+
+      - name: Run stable-ID benchmark suite
+        run: dotnet run --project FSM_Serialization_Benchmarks.csproj --configuration Release --no-build -- --filter "*SER_*"
+
+      - name: Preserve raw benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: serialization-benchmark-${{ github.sha }}
+          path: |
+            BenchmarkDotNet.Artifacts/**
+            environment.txt
+          if-no-files-found: warn
+          retention-days: 90
