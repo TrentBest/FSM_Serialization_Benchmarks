@@ -29,8 +29,8 @@ IDs identify **what is measured**, not a promise about speed. A new algorithm or
 | SER-RD-001 | `ReadBenchmarks.SER_RD_001_MemoryStream_Read` | Read from read-only BCL stream into preallocated destination |
 | SER-RD-002 | `ReadBenchmarks.SER_RD_002_MemoryBinaryStream_Read` | Read through package stream into same-sized destination |
 | SER-RD-003 | `ReadBenchmarks.SER_RD_003_StreamBinaryStream_Read` | Read through package wrapper into same-sized destination |
-| SER-CTR-001 | `ExistingDataConstructionBenchmarks.SER_STR_001_MemoryStream_ConstructWithData` | Wrap existing data read-only without copying |
-| SER-CTR-002 | `ExistingDataConstructionBenchmarks.SER_STR_002_MemoryBinaryStream_ConstructWithData` | Construct package stream from existing data; current implementation may copy |
+| SER-CTR-001 | `ExistingDataConstructionBenchmarks.SER_CTR_001_MemoryStream_ConstructWithData` | Wrap existing data read-only without copying |
+| SER-CTR-002 | `ExistingDataConstructionBenchmarks.SER_CTR_002_MemoryBinaryStream_ConstructWithData` | Construct package stream from existing data; current implementation may copy |
 | SER-ARR-001 | `ToArrayBenchmarks.SER_ARR_001_MemoryStream_ToArray` | Write payload then materialize a result array |
 | SER-ARR-002 | `ToArrayBenchmarks.SER_ARR_002_MemoryBinaryStream_ToArray` | Same output contract using package stream |
 | SER-POS-001 | `PositionOverwriteBenchmarks.SER_POS_001_MemoryStream_PositionOverwrite` | Copy input, seek to midpoint and overwrite one byte |
