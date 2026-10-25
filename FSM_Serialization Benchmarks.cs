@@ -257,7 +257,7 @@ public class OutputBufferStrategyBenchmarks
     }
 
     [Benchmark]
-    public int SER_BUF_005_ArrayPool_WarmCopyReturn()
+    public int SER_BUF_005_ArrayPool_RentCopyClearReturn()
     {
         byte[] rented = System.Buffers.ArrayPool<byte>.Shared.Rent(_data.Length);
         try
@@ -267,7 +267,7 @@ public class OutputBufferStrategyBenchmarks
         }
         finally
         {
-            System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+            System.Buffers.ArrayPool<byte>.Shared.Return(rented, clearArray: true);
         }
     }
 }
