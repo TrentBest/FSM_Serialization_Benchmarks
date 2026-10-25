@@ -8,6 +8,15 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.7.37220.1" />
+  </ItemGroup>
+
+  <!-- Default lane intentionally stays pinned to the published package. -->
+  <ItemGroup Condition="'$(UseSerializationSource)' != 'true'">
     <PackageReference Include="TheSingularityWorkshop.FSM_Serialization" Version="0.1.0-alpha.2" />
+  </ItemGroup>
+
+  <!-- Development lane compiles the checked-out FSM_Serialization source directly. -->
+  <ItemGroup Condition="'$(UseSerializationSource)' == 'true'">
+    <ProjectReference Include="../source/TheSingularityWorkshop.FSM_Serialization.csproj" />
   </ItemGroup>
 </Project>
