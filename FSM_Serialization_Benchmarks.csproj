@@ -17,6 +17,6 @@
 
   <!-- Development lane compiles the checked-out FSM_Serialization source directly. -->
   <ItemGroup Condition="'$(UseSerializationSource)' == 'true'">
-    <ProjectReference Include="../source/TheSingularityWorkshop.FSM_Serialization.csproj" />
+    <ProjectReference Include="source/TheSingularityWorkshop.FSM_Serialization.csproj" />
   </ItemGroup>
 </Project>
