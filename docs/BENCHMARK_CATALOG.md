@@ -53,11 +53,20 @@ These cases use the same deterministic byte payload and return its logical outpu
 
 The two pool cases intentionally include rent and return on every invocation. They do **not** yet isolate a caller-managed, reused lease; add that as a separate ID only with explicit lifetime and concurrency rules. The array-copy case measures the unavoidable output allocation but does not include a stream abstraction. These are related microbenchmarks, not interchangeable end-to-end replacements.
 
+## Primitive integer encodings
+
+| Stable ID | Current BenchmarkDotNet method | Operation / important caveat |
+|---|---|---|
+| SER-INT-001 | `IntegerEncodingBenchmarks.SER_INT_001_FixedWidthUInt32` | Fixed-width little-endian UInt32 output; 4 bytes per value |
+| SER-INT-002 | `IntegerEncodingBenchmarks.SER_INT_002_Uleb128UInt32` | ULEB128 output; variable length per value |
+
+The integer suite uses explicit small, mixed and large-value distributions. It reports both time/allocations and output length, since these encodings trade size against CPU cost. This is an encode-only microbenchmark; decoder and round-trip cases are still outstanding.
+
 ## Planned families — reserve IDs when implementation lands
 
 | Family | ID range | Cases to add |
 |---|---|---|
-| Primitive encoding | SER-INT-001… | fixed-width integers, unsigned varints, signed zigzag where appropriate, boundary values |
+| Additional integer encoding | SER-INT-003… | signed zigzag, decode-only and round-trip cases, broader boundary/property tests |
 | Strings | SER-STRG-001… | UTF-8 length-prefixed strings, repeated strings, string-table/local-index representation |
 | References and tables | SER-REF-001… | external/sparse IDs mapped to dense local indices, explicit tables, forward references |
 | Layout and sizing | SER-LAY-001… | one-pass growth, exact two-pass sizing, backpatch/fixup; same canonical bytes where promised |
