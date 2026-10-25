@@ -5,6 +5,13 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <!-- The source checkout lives below this project directory. Keep its files
+       out of this project's default recursive compile glob; the referenced
+       source project will compile its own files in its own project scope. -->
+  <ItemGroup>
+    <Compile Remove="source/**/*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.7.37220.1" />
