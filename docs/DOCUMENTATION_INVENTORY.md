@@ -51,5 +51,4 @@ Each new diagram should state:
 
 Documentation is not complete because every row has a file. Close the gate only when applicable views have an honest status, the links and assets are checked, source-derived outputs identify their provenance and scope, and any claimed automated coverage is demonstrated by the actual workflow.
 
-<!-- THE SINGULARITY WORKSHOP FOOTER -->
-<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
+<!-- Canonical Avatar.jpg footer not yet applied: no verified Avatar.jpg asset path was found. Do not substitute another image or invent a URL. -->
