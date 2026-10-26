@@ -144,6 +144,31 @@ public class PositionOverwriteBenchmarks : FSMSerializationBenchmarkBase
 
 public class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
 {
+    [GlobalSetup(Target = nameof(BinarySerializable_RoundTrip))]
+    public void ValidateRoundTripCorrectness()
+    {
+        var value = new BenchmarkValue(Data);
+
+        using var stream = new MemoryBinaryStream();
+        value.Pack(stream);
+        stream.Position = 0;
+
+        var restored = new BenchmarkValue(Size);
+        restored.Unpack(stream);
+
+        if (restored.Payload.Length != Data.Length)
+            throw new InvalidOperationException("Round-trip payload length changed.");
+
+        for (int i = 0; i < Data.Length; i++)
+        {
+            if (restored.Payload[i] != Data[i])
+                throw new InvalidOperationException($"Round-trip payload differs at byte index {i}.");
+        }
+
+        if (stream.Position != stream.Length)
+            throw new InvalidOperationException("Round-trip left trailing or unread bytes.");
+    }
+
     [Benchmark(Description = "SER-RT-001 | BinarySerializable_RoundTrip")]
     public int BinarySerializable_RoundTrip()
     {
