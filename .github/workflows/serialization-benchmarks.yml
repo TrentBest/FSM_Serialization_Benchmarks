@@ -102,11 +102,24 @@ jobs:
       - name: Restore benchmark harness against source project
         run: dotnet restore FSM_Serialization_Benchmarks.slnx -p:UseSerializationSource=true
 
-      - name: Build benchmark harness against source project
-        run: dotnet build FSM_Serialization_Benchmarks.slnx --configuration Release --no-restore -p:UseSerializationSource=true
+      - name: Build benchmark harness and source reference in Release
+        run: dotnet build FSM_Serialization_Benchmarks.csproj --configuration Release --no-restore -p:UseSerializationSource=true
 
       - name: Run stable-ID benchmark suite against source
         run: dotnet run --project FSM_Serialization_Benchmarks.csproj --configuration Release --no-build -p:UseSerializationSource=true -- --filter "*SER_*"
+
+      - name: Require actual benchmark result reports
+        shell: pwsh
+        run: |
+          $resultsPath = Join-Path $PWD "BenchmarkDotNet.Artifacts/results"
+          if (-not (Test-Path $resultsPath)) {
+            throw "BenchmarkDotNet produced no results directory; refusing to mark the source lane successful."
+          }
+          $reports = @(Get-ChildItem -Path $resultsPath -File -Recurse | Where-Object { $_.Extension -in @(".csv", ".md", ".html") })
+          if ($reports.Count -eq 0) {
+            throw "BenchmarkDotNet produced no CSV, Markdown, or HTML result reports; refusing to mark the source lane successful."
+          }
+          "Verified $($reports.Count) BenchmarkDotNet result report(s)."
 
       - name: Preserve raw development-source evidence
         if: always()
