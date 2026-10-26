@@ -82,7 +82,10 @@
 
   <path d="M45 500 H1155" stroke="#485984" stroke-width="1"/>
   <text x="48" y="528" class="hint">Animated pulse = explanatory flow only; this SVG does not read live benchmark results.</text>
-  <circle r="6" fill="#e3fbff" filter="url(#glow)">
-    <animateMotion dur="5.8s" repeatCount="indefinite" path="M235 222 H285 M475 222 H525 M715 222 H765 M955 222 H1005"/>
-  </circle>
+  <g fill="#e3fbff" filter="url(#glow)">
+    <circle r="5"><animateMotion dur="1.25s" begin="0s" repeatCount="indefinite" path="M235 222 H285"/></circle>
+    <circle r="5"><animateMotion dur="1.25s" begin=".9s" repeatCount="indefinite" path="M475 222 H525"/></circle>
+    <circle r="5"><animateMotion dur="1.25s" begin="1.8s" repeatCount="indefinite" path="M715 222 H765"/></circle>
+    <circle r="5"><animateMotion dur="1.25s" begin="2.7s" repeatCount="indefinite" path="M955 222 H1005"/></circle>
+  </g>
 </svg>
