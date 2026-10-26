@@ -1,15 +1,17 @@
 <!-- The Singularity Workshop moniker -->
-<p align="center">
-  <a href="https://github.com/TrentBest">
-    <img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop — animated workshop moniker" width="720" />
-  </a>
-</p>
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
 
 # ✳️ 00 FSM_Serialization_Benchmarks
 
 This repository is the reproducible performance-evidence harness for `TheSingularityWorkshop.FSM_Serialization`. It measures named operations, preserves raw results, and grows from primitive stream costs toward real format-owned FSM workloads.
 
 This README follows the Workshop's shared [Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md), while keeping this repository's purpose and implementation authoritative.
+
+<p align="center">
+  <a href="docs/GALLERY.md"><img src="docs/assets/serialization-evidence-flow.svg" alt="Conceptual living diagram: deterministic input passes through a named operation and correctness gate before timing and evidence retention. A failed correctness gate invalidates performance interpretation." width="1000" /></a>
+</p>
+
+**[Explore the living Gallery](docs/GALLERY.md)** · **[Read the Benchmark Catalog](docs/BENCHMARK_CATALOG.md)** · **[Review documentation coverage](docs/DOCUMENTATION_INVENTORY.md)**
 
 ## 🟦 01 What
 
@@ -48,16 +50,16 @@ Never merge or compare the lanes as if they were the same build. Each run should
 ## 🟢 04 See it in a minute
 
 1. Read the [Benchmark Catalog](docs/BENCHMARK_CATALOG.md) and select a stable ID.
-2. Run the Release command above.
-3. Inspect the generated `BenchmarkDotNet.Artifacts/results` reports.
-4. Record the exact source commit and environment with the result.
-5. Compare only equivalent workloads and keep the raw artifacts.
+2. Read the [Living Gallery](docs/GALLERY.md) to understand the correctness-to-evidence flow.
+3. Run the Release command above.
+4. Inspect the generated `BenchmarkDotNet.Artifacts/results` reports.
+5. Record the exact source commit and environment with the result.
 
 A successful workflow proves that the configured cases ran and reports were retained. It does not, by itself, prove that one implementation is faster, that a regression threshold is met, or that the complete serialization domain has been benchmarked.
 
-## 🟩 05 Readiness and next work
+## 🟪 05 Readiness and next work
 
-**Harness readiness: provisional; not a package release verdict.** Stable names are now attached to the current stream/round-trip cases, and a catalog records their timed contracts and caveats. No current-branch CI pass is claimed.
+**Harness readiness: provisional; not a package release verdict.** Stable names are now attached to the current stream/round-trip cases, and a catalog records their timed contracts and caveats. The new living evidence-flow diagram is conceptual documentation, not a live dashboard. No current-branch CI pass is claimed.
 
 Outstanding work includes:
 - Restore automated validation for this branch, including restore/build and benchmark execution with retained reports.
@@ -68,7 +70,7 @@ Outstanding work includes:
 - Add malformed-input/resource-safety workloads where meaningful.
 - Implement automated result interpretation with repeated comparisons, noise-aware regression policy, and historical deltas.
 - Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy.
-- Run a complete link/asset check and provide a valid `Avatar.jpg` footer asset. That asset was not found in the checked development tree, so this README does not fabricate a link to it.
+- Resolve the documentation footer asset gap: `Avatar.jpg` was not found in the checked development tree or the searched Workshop source paths. Do not invent a path or imply the living SVG is the canonical footer replacement.
 
 ## Evidence discipline
 
@@ -82,7 +84,9 @@ Outstanding work includes:
 
 ## Support and related documentation
 
+- [Living Gallery](docs/GALLERY.md)
 - [Benchmark catalog and methodology](docs/BENCHMARK_CATALOG.md)
+- [Documentation coverage inventory](docs/DOCUMENTATION_INVENTORY.md)
 - [FSM_Serialization source repository](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Serialization)
 - [FSM_Serialization domain completeness review](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Serialization/blob/development/docs/DOMAIN_COMPLETENESS.md)
 - [Shared Workshop documentation standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md)
@@ -91,11 +95,5 @@ Outstanding work includes:
 
 ---
 
-<p align="center">
-  <a href="https://github.com/TrentBest/TheSingularityWorkshop" aria-label="The Singularity Workshop living avatar">
-    <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar — a digital vortex converging on its central eye" width="112" />
-  </a><br />
-  <strong>The Singularity Workshop</strong><br />
-  <em>If a picture is worth a thousand words, what is a living picture worth?</em><br />
-  <a href="https://github.com/TrentBest">GitHub</a> · <a href="https://www.patreon.com/TheSingularityWorkshop">Support the Workshop</a>
-</p>
+<!-- THE SINGULARITY WORKSHOP FOOTER -->
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
