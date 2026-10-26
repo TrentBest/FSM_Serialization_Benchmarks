@@ -43,7 +43,7 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 
 ## Parameters and correctness
 
-The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`. The current `BinarySerializable_RoundTrip` case returns the restored payload length; this is a minimal completion signal, not a complete byte-for-byte correctness assertion. Strengthen setup-time round-trip verification before treating this case as a correctness-certified baseline.
+The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`. The `SER-RT-001` case now validates correctness in a targeted `GlobalSetup` before timing: restored payload length and every byte must match the input, and the stream must have no unread/trailing bytes. The timed method returns the restored length as a low-cost completion signal; the byte comparison itself is intentionally outside the measured operation.
 
 The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. Read the timed-contract and caveat columns before comparing ratios. A fair comparison must either equalize those costs or explicitly label them as part of the operation being measured.
 
