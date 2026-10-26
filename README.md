@@ -16,37 +16,34 @@ This README follows the Workshop's shared [Documentation Standard](https://githu
 BenchmarkDotNet cases have stable identities in the form `SER-<FAMILY>-<NNN>`. An ID names the operation and semantic contract, not a performance promise. See the [Benchmark Catalog](docs/BENCHMARK_CATALOG.md) before adding, retiring, or comparing a case.
 
 Current measured families include:
-- Historical stream construction, read/write, materialization, positioning, and pack/unpack baselines.
-- Output-buffer strategies: growing/pre-sized `MemoryStream`, exact array copy, and pooled-buffer rent/copy/return with and without clearing.
-- Fixed-width little-endian UInt32 versus ULEB128 encoding and decoding over small, mixed, and large-value distributions.
+- Stream construction, read/write, materialization, positioning, and pack/unpack baselines.
+- Output-buffer strategy and primitive integer-encoding cases are planned follow-up families; do not infer that they are present in the current harness source until the corresponding cases appear in the catalog.
+- Current workload parameters are 16, 1,024, 10,000, and 100,000 bytes.
 
 The catalog defines the exact contracts and caveats. These primitive cases do not establish the performance of an FSM definition codec that does not yet exist.
 
-## 🟣 02 Why
+## 🟣 01 Why
 
 Performance claims are useful only when another developer can reproduce the workload and understand what was timed. Stable IDs preserve history while raw reports, environment data, source identity, and correctness checks make results reviewable.
 
 Do not compare operations with different semantics as if they were interchangeable. Do not attribute the approximately 21% end-to-end FSM_COS stress-test observation to serialization without a controlled, isolated experiment.
 
-## 🔺 03 How
+## 🔺 02 How
 
 Requires the .NET 8 SDK. From this repository root:
 
 ```sh
 dotnet restore
-dotnet run --configuration Release -- --filter '*SER_*'
+dotnet run --configuration Release
 ```
 
-Omit the filter to run the full suite. Verify filter syntax against the BenchmarkDotNet version restored by this repository.
-
-The automated workflow separates two lanes:
-
+The automated workflow should separate two lanes when configured:
 - **Published-package baseline:** pinned to `TheSingularityWorkshop.FSM_Serialization` NuGet `0.1.0-alpha.2` for historical consumer comparisons.
-- **Development-source lane:** tests the source repository first, then builds and benchmarks a direct project reference at the requested full source SHA (or the configured development ref).
+- **Development-source lane:** tests the source repository first, then builds and benchmarks a direct project reference at the requested full source SHA (or configured development ref).
 
-Never merge or compare the lanes as if they were the same build. Each run should preserve the source/harness commits, package version or source identity, runtime, OS/CPU, configuration, parameters, BenchmarkDotNet reports, and correctness result.
+Never merge or compare the lanes as if they were the same build. Each run should preserve the source/harness commits, package version or source identity, runtime, OS/CPU, configuration, parameters, BenchmarkDotNet reports, and correctness result. Verify current workflow files and run evidence before assuming automation is present or green.
 
-## 🟢 04 See it in a minute
+## 🟢 03 See it in a minute
 
 1. Read the [Benchmark Catalog](docs/BENCHMARK_CATALOG.md) and select a stable ID.
 2. Run the Release command above.
@@ -56,18 +53,19 @@ Never merge or compare the lanes as if they were the same build. Each run should
 
 A successful workflow proves that the configured cases ran and reports were retained. It does not, by itself, prove that one implementation is faster, that a regression threshold is met, or that the complete serialization domain has been benchmarked.
 
-## 🟩 05 Readiness and next work
+## 🟩 04 Readiness and next work
 
-**Harness readiness: 45% (provisional; not a package release verdict).** The stable catalog, initial buffer-strategy cases, integer encode/decode cases, setup-time correctness checks, and distinct published/source lanes are implemented. The dual-lane workflow run [#18](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40252238764) passed both lanes and retained BenchmarkDotNet artifacts. That validates execution and report production—not comparative analysis or domain completeness.
+**Harness readiness: provisional; not a package release verdict.** The first catalog and stable names for the current stream/round-trip cases are now recorded. Historical workflow run [#18](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40252238764) was reported as passing both lanes and retaining BenchmarkDotNet artifacts, but the current development tree must be checked before treating that as evidence for the current harness commit.
 
 Outstanding work includes:
-- Full integer round-trip and signed/zigzag cases.
-- String, reference/table, layout/sizing, and concrete FSM definition workloads once their format contract is owned and implemented.
-- Fair adapters for mature serializer comparisons, with equivalent semantics and explicit setup/allocation costs.
-- Malformed-input/resource-safety workloads where meaningful.
-- Automated result interpretation using repeatable comparisons, noise-aware regression policy, and historical deltas.
-- Repair and verify cross-repository dispatch: the source observer has encountered a `403 Resource not accessible by personal access token`; a configured secret alone does not prove repository-dispatch permission.
-- A complete local link/asset check and a valid `Avatar.jpg` footer asset. The required `Avatar.jpg` asset was not found in this repository's checked development paths, so this README does not fabricate a link to it.
+- Strengthen setup-time round-trip validation to compare restored bytes, not just returned length.
+- Add integer fixed-width/variable-length encoding, signed zigzag, and complete round-trip cases.
+- Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
+- Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
+- Add malformed-input/resource-safety workloads where meaningful.
+- Implement automated result interpretation with repeated comparisons, noise-aware regression policy, and historical deltas.
+- Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy.
+- Run a complete link/asset check and provide a valid `Avatar.jpg` footer asset. That asset was not found in the checked development tree, so this README does not fabricate a link to it.
 
 ## Evidence discipline
 
