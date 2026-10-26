@@ -27,19 +27,32 @@ Read from left to right:
 
 The lower branches matter just as much as the main line. A correctness failure blocks performance interpretation. A benchmark report is not automatically a win, regression, or proof of domain completeness.
 
-## 04 — See it in a minute
+## 04 — What belongs inside the timer?
+
+![Conceptual timing-boundary diagram: setup before the timer, the named operation inside the timed region, and verification or cleanup after it. End-to-end benchmarks may intentionally include setup costs when their contract says so.](assets/benchmark-timing-boundaries.svg)
+
+There is no universally correct timer boundary; there is a correct boundary for a clearly stated question.
+
+- **Operation-only:** setup establishes equivalent inputs before timing. Output validation can happen outside the measured path when correctness is separately guaranteed.
+- **End-to-end:** construction, copying, encoding, decoding, and cleanup may be included when that complete user-visible operation is the question.
+- **Fair comparison:** compared cases must measure equivalent semantic work. If setup costs differ, either normalize them or state plainly that the result compares end-to-end contracts rather than isolated primitives.
+
+The current catalog records known differences in setup and ownership costs. Do not compare ratios without reading those caveats.
+
+## 05 — See it in a minute
 
 - **Choose a workload:** [Benchmark Catalog](BENCHMARK_CATALOG.md) defines stable IDs, timed contracts, parameters, and caveats.
 - **Run the harness:** from the repository root, use `dotnet restore` followed by `dotnet run --configuration Release`.
 - **Inspect the report:** look under `BenchmarkDotNet.Artifacts/results`.
 - **Verify the evidence:** record the exact harness commit, package version or source SHA, runtime, OS/CPU, configuration, parameters, and correctness status.
 
-**Current evidence limitation:** the repository's `development` branch has not yet demonstrated a current-branch build and benchmark run for the latest correctness changes. The diagram explains the intended evidence discipline; it is not a claim that the pipeline is currently green.
+**Current evidence limitation:** the repository's `development` branch has not yet demonstrated a current-branch build and benchmark run for the latest correctness changes. The diagrams explain the intended evidence discipline; they are not a claim that the pipeline is currently green.
 
-## 05 — Choose your next step
+## 06 — Choose your next step
 
 - **Understand each measured operation:** [Benchmark Catalog](BENCHMARK_CATALOG.md).
 - **Understand purpose, setup, and current limitations:** [Repository README](../README.md).
+- **Review applicable documentation views and known gaps:** [Documentation Coverage Inventory](DOCUMENTATION_INVENTORY.md).
 - **Understand serialization domain gaps:** [FSM_Serialization domain completeness review](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Serialization/blob/development/docs/DOMAIN_COMPLETENESS.md).
 - **Understand the shared standard:** [FSM_COS Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md).
 
@@ -47,11 +60,12 @@ The lower branches matter just as much as the main line. A correctness failure b
 
 ## Visual provenance
 
-- **Artifact:** `serialization-evidence-flow.svg`
-- **Status:** authored conceptual model; animated explanatory pulse; not runtime telemetry.
-- **Source revision:** the commit adding this artifact and this gallery.
-- **Regeneration:** edit the SVG source directly; keep its title, accessible description, and matching Markdown text alternative synchronized.
-- **Verification limit:** GitHub rendering of the SVG is the presentation target; no interactive controls or live-data binding are claimed.
+| Artifact | Status | What it does not prove |
+|---|---|---|
+| `serialization-evidence-flow.svg` | Authored conceptual model; animated explanatory pulse | Does not read live results, prove a benchmark ran, or indicate CI status |
+| `benchmark-timing-boundaries.svg` | Authored conceptual model; animated pulse within the timed region | Does not decide the correct boundary for every workload or prove compared cases are equivalent |
+
+Edit the SVG source directly; keep its title, accessible description, and matching Markdown text alternative synchronized. GitHub rendering is the presentation target. No interactive controls, source-derived UML, or live-data binding are claimed.
 
 <!-- THE SINGULARITY WORKSHOP FOOTER -->
 <p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
