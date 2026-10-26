@@ -3,6 +3,9 @@
 
 # ✳️ 00 FSM_Serialization_Benchmarks
 
+[![Last commit](https://img.shields.io/github/last-commit/TrentBest/FSM_Serialization_Benchmarks/development?style=flat-square&logo=github)](https://github.com/TrentBest/FSM_Serialization_Benchmarks/commits/development/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+
 This repository is the reproducible performance-evidence harness for `TheSingularityWorkshop.FSM_Serialization`. It measures named operations, preserves raw results, and grows from primitive stream costs toward real format-owned FSM workloads.
 
 This README follows the Workshop's shared [Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md), while keeping this repository's purpose and implementation authoritative.
