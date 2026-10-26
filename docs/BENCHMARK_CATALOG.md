@@ -9,7 +9,7 @@
 
 This catalog defines the measured operation, stable identity, and interpretation limits of each currently implemented BenchmarkDotNet case. IDs identify a workload contract; they do not imply equivalence between different implementations or promise a particular performance result.
 
-This document follows the [Workshop Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md).
+This document follows the [Workshop Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md). Start with the [Living Gallery](GALLERY.md) for a visual explanation of how correctness gates performance interpretation, then use this catalog for exact workload contracts.
 
 ## Identity rules
 
@@ -65,7 +65,9 @@ A workflow pass means configured workloads executed and reports were produced. I
 
 ## Related resources
 
+- [Living Gallery](GALLERY.md)
 - [Benchmark README](../README.md)
+- [Documentation coverage inventory](DOCUMENTATION_INVENTORY.md)
 - [FSM_Serialization source](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Serialization)
 - [FSM_Serialization domain completeness review](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Serialization/blob/development/docs/DOMAIN_COMPLETENESS.md)
 - [Shared Workshop documentation standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md)
@@ -74,11 +76,5 @@ A workflow pass means configured workloads executed and reports were produced. I
 
 ---
 
-<p align="center">
-  <a href="https://github.com/TrentBest/TheSingularityWorkshop" aria-label="The Singularity Workshop living avatar">
-    <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar" width="112" />
-  </a><br />
-  <strong>The Singularity Workshop</strong><br />
-  <em>If a picture is worth a thousand words, what is a living picture worth?</em><br />
-  <a href="https://github.com/TrentBest">GitHub</a> · <a href="https://www.patreon.com/TheSingularityWorkshop">Support the Workshop</a>
-</p>
+<!-- THE SINGULARITY WORKSHOP FOOTER -->
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
