@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 440" role="img" aria-labelledby="title desc">
+  <title id="title">What belongs inside the benchmark timer?</title>
+  <desc id="desc">A conceptual timeline separates fixture preparation and validation from the timed operation and cleanup. Setup and cleanup may intentionally be part of an end-to-end benchmark, but comparisons must label that contract and measure equivalent work.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101b35"/><stop offset="1" stop-color="#201638"/></linearGradient>
+    <linearGradient id="timed" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4f9dce"/><stop offset="1" stop-color="#9e85ed"/></linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#8ecfff"/></marker>
+    <style>
+      text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f5f7ff}
+      .small{font-size:14px;fill:#cbd5f2}
+      .label{font-size:16px;font-weight:700}
+      .caps{font-size:13px;letter-spacing:1.5px;font-weight:700;fill:#b6c5ed}
+    </style>
+  </defs>
+  <rect width="1100" height="440" rx="22" fill="url(#bg)"/>
+  <text x="42" y="45" class="caps">BENCHMARK METHOD · CONCEPTUAL MODEL</text>
+  <text x="42" y="80" font-size="27" font-weight="750">Define the boundary before comparing numbers</text>
+  <text x="42" y="108" class="small">Setup costs are not “free”; they are either outside this measurement or intentionally part of it.</text>
+
+  <rect x="45" y="155" width="250" height="115" rx="14" fill="#202c50" stroke="#718bd2" stroke-width="1.5"/>
+  <text x="67" y="184" class="caps">BEFORE TIMER</text>
+  <text x="67" y="213" class="label">Fixture / setup</text>
+  <text x="67" y="239" class="small">Allocate input, reset state,</text>
+  <text x="67" y="258" class="small">prepare equivalent conditions.</text>
+
+  <path d="M295 212 H365" fill="none" stroke="#8ecfff" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="365" y="145" width="370" height="135" rx="16" fill="#202c50" stroke="#d2a7ff" stroke-width="2.5"/>
+  <rect x="379" y="159" width="342" height="107" rx="10" fill="none" stroke="#7e69bd" stroke-dasharray="5 6"/>
+  <text x="397" y="185" class="caps">TIMED REGION</text>
+  <text x="397" y="217" font-size="23" font-weight="750">Named operation</text>
+  <text x="397" y="242" class="small">Read / write / encode / decode</text>
+  <text x="397" y="261" class="small">Exactly the contract named by the ID</text>
+  <path d="M405 202 H690" stroke="url(#timed)" stroke-width="4" stroke-linecap="round" opacity=".65"/>
+  <circle r="6" fill="#f0e5ff">
+    <animateMotion dur="2.6s" repeatCount="indefinite" path="M405 202 H690"/>
+  </circle>
+
+  <path d="M735 212 H805" fill="none" stroke="#8ecfff" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="805" y="155" width="250" height="115" rx="14" fill="#202c50" stroke="#718bd2" stroke-width="1.5"/>
+  <text x="827" y="184" class="caps">AFTER TIMER</text>
+  <text x="827" y="213" class="label">Check / cleanup</text>
+  <text x="827" y="239" class="small">Verify output separately when</text>
+  <text x="827" y="258" class="small">that is the intended contract.</text>
+
+  <path d="M45 305 H1055" stroke="#485984" stroke-width="1"/>
+  <text x="48" y="337" font-size="17" font-weight="700">Two legitimate benchmark contracts</text>
+  <rect x="45" y="354" width="485" height="56" rx="10" fill="#203b3b" stroke="#6ce0c1"/>
+  <text x="63" y="377" font-size="15" font-weight="700">Operation-only</text>
+  <text x="63" y="397" class="small">Setup/verification excluded; timed semantics must match.</text>
+  <rect x="550" y="354" width="505" height="56" rx="10" fill="#3b2d3d" stroke="#ffb86b"/>
+  <text x="568" y="377" font-size="15" font-weight="700">End-to-end</text>
+  <text x="568" y="397" class="small">Setup/copy/cleanup included by design; label all included costs.</text>
+</svg>
