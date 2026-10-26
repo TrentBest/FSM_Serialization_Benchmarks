@@ -61,7 +61,7 @@ A successful workflow proves that the configured cases ran and reports were reta
 
 Outstanding work includes:
 - Restore automated validation for this branch, including restore/build and benchmark execution with retained reports.
-- Strengthen setup-time round-trip validation to compare restored bytes, not just returned length.
+- Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
 - Add integer fixed-width/variable-length encoding, signed zigzag, and complete round-trip cases.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
 - Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
