@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">From bytes to trustworthy benchmark evidence</title>
+  <desc id="desc">A conceptual flow diagram. A deterministic input fixture passes through an operation under test, then a correctness gate. Separately, a benchmark harness measures the named operation and retains raw reports with source and environment identity. A failed correctness gate invalidates performance interpretation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101b35"/>
+      <stop offset="1" stop-color="#1d1740"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#69d8ff"/>
+      <stop offset="1" stop-color="#c5a7ff"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M1 1 L10 6 L1 11 Z" fill="#8ecfff"/>
+    </marker>
+    <style>
+      text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f5f7ff}
+      .eyebrow{font-size:15px;letter-spacing:2px;fill:#a9b9e8;font-weight:700}
+      .heading{font-size:22px;font-weight:700}
+      .detail{font-size:15px;fill:#d1daf7}
+      .node{fill:#202c50;stroke:#718bd2;stroke-width:1.5}
+      .gate{fill:#263b3b;stroke:#6ce0c1;stroke-width:1.5}
+      .lane{fill:none;stroke:#718bd2;stroke-width:3;marker-end:url(#arrow)}
+      .hint{font-size:13px;fill:#a9b9e8}
+    </style>
+  </defs>
+  <rect width="1200" height="560" rx="24" fill="url(#bg)"/>
+  <text x="48" y="48" class="eyebrow">FSM_SERIALIZATION_BENCHMARKS · CONCEPTUAL MODEL</text>
+  <text x="48" y="83" font-size="29" font-weight="750">Measure only what you can trust</text>
+  <text x="48" y="112" class="detail">Correctness is a gate. Timing is evidence—not a substitute for correctness.</text>
+
+  <path class="lane" d="M235 222 H285"/>
+  <path class="lane" d="M475 222 H525"/>
+  <path class="lane" d="M715 222 H765"/>
+  <path class="lane" d="M955 222 H1005"/>
+
+  <rect class="node" x="45" y="158" width="190" height="128" rx="16"/>
+  <text x="65" y="188" class="eyebrow">01 · INPUT</text>
+  <text x="65" y="218" class="heading">Fixture</text>
+  <text x="65" y="245" class="detail">Known bytes</text>
+  <text x="65" y="266" class="detail">Known parameters</text>
+
+  <rect class="node" x="285" y="158" width="190" height="128" rx="16"/>
+  <text x="305" y="188" class="eyebrow">02 · OPERATION</text>
+  <text x="305" y="218" class="heading">Encode / decode</text>
+  <text x="305" y="245" class="detail">Named contract</text>
+  <text x="305" y="266" class="detail">Stable benchmark ID</text>
+
+  <rect class="gate" x="525" y="158" width="190" height="128" rx="16"/>
+  <text x="545" y="188" class="eyebrow">03 · GATE</text>
+  <text x="545" y="218" class="heading">Verify</text>
+  <text x="545" y="245" class="detail">Bytes / values match</text>
+  <text x="545" y="266" class="detail">No missing tail</text>
+
+  <rect class="node" x="765" y="158" width="190" height="128" rx="16"/>
+  <text x="785" y="188" class="eyebrow">04 · MEASURE</text>
+  <text x="785" y="218" class="heading">Benchmark</text>
+  <text x="785" y="245" class="detail">Repeated samples</text>
+  <text x="785" y="266" class="detail">Costs stated clearly</text>
+
+  <rect class="node" x="1005" y="158" width="150" height="128" rx="16"/>
+  <text x="1025" y="188" class="eyebrow">05 · KEEP</text>
+  <text x="1025" y="218" class="heading">Evidence</text>
+  <text x="1025" y="245" class="detail">Raw reports</text>
+  <text x="1025" y="266" class="detail">SHA + machine</text>
+
+  <path d="M620 286 V335 H385 V368" fill="none" stroke="#ffb86b" stroke-width="2.5" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  <rect x="225" y="368" width="320" height="88" rx="14" fill="#3c2a35" stroke="#ffb86b" stroke-width="1.5"/>
+  <text x="248" y="398" font-size="18" font-weight="700">If verification fails</text>
+  <text x="248" y="423" class="detail">Stop interpretation; fix the contract.</text>
+  <text x="248" y="443" class="hint">Fast wrong answers are still wrong.</text>
+
+  <path d="M860 286 V335 H825 V368" fill="none" stroke="#8ecfff" stroke-width="2.5" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  <rect x="625" y="368" width="430" height="88" rx="14" fill="#202c50" stroke="#718bd2" stroke-width="1.5"/>
+  <text x="650" y="398" font-size="18" font-weight="700">A report is not a verdict</text>
+  <text x="650" y="423" class="detail">Compare equivalent work on recorded environments.</text>
+  <text x="650" y="443" class="hint">Use repeated evidence before calling a regression.</text>
+
+  <path d="M45 500 H1155" stroke="#485984" stroke-width="1"/>
+  <text x="48" y="528" class="hint">Animated pulse = explanatory flow only; this SVG does not read live benchmark results.</text>
+  <circle r="6" fill="#e3fbff" filter="url(#glow)">
+    <animateMotion dur="5.8s" repeatCount="indefinite" path="M235 222 H285 M475 222 H525 M715 222 H765 M955 222 H1005"/>
+  </circle>
+</svg>
