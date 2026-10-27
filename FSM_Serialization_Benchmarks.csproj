@@ -5,9 +5,14 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <UseSourceProject Condition="'$(UseSourceProject)' == ''">false</UseSourceProject>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.7.37220.1" />
-    <PackageReference Include="TheSingularityWorkshop.FSM_Serialization" Version="0.1.0-alpha.2" />
+    <PackageReference Include="TheSingularityWorkshop.FSM_Serialization" Version="0.1.0-alpha.2" Condition="'$(UseSourceProject)' != 'true'" />
+    <ProjectReference Include="../source/TheSingularityWorkshop.FSM_Serialization.csproj" Condition="'$(UseSourceProject)' == 'true'" />
   </ItemGroup>
 </Project>
