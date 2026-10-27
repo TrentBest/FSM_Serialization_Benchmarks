@@ -46,7 +46,7 @@ The intended automated design separates two lanes:
 - **Published-package baseline:** pinned to `TheSingularityWorkshop.FSM_Serialization` NuGet `0.1.0-alpha.2` for historical consumer comparisons.
 - **Development-source lane:** tests the source repository first, then builds and benchmarks a direct project reference at the requested full source SHA (or configured development ref).
 
-**Current CI caveat:** the current `development` tree contains no `.github/workflows/` files, and the Actions API reports no workflow runs on this branch. Therefore the two-lane automation described above is not currently evidenced as active on this branch. Historical run [#18](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40252238764) must not be treated as proof that this exact tree was built.
+**Current CI status:** `.github/workflows/benchmark.yml` now acts as a GitHub Actions execution host for the exact-source lane. It resolves or accepts a full FSM_Serialization SHA, checks out that exact source, restores/builds/tests the source solution, builds this harness against the source project (rather than the published package), runs a dry round-trip benchmark smoke, verifies that a report exists, and retains source/test/report provenance. The workflow is an execution adapter and evidence producer; it does not yet invoke CiAi policy evaluation, and a workflow run must pass on the current commit before claiming the lane is healthy. Historical run [#18](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40252238764) is not evidence that this exact tree was built.
 
 Never merge or compare the lanes as if they were the same build. Each run should preserve the source/harness commits, package version or source identity, runtime, OS/CPU, configuration, parameters, BenchmarkDotNet reports, and correctness result.
 
@@ -65,7 +65,7 @@ A successful workflow proves that the configured cases ran and reports were reta
 **Harness readiness: provisional; not a package release verdict.** Stable names are now attached to the current stream/round-trip cases, and a catalog records their timed contracts and caveats. The new living evidence-flow diagram is conceptual documentation, not a live dashboard. No current-branch CI pass is claimed.
 
 Outstanding work includes:
-- Restore automated validation for this branch, including restore/build and benchmark execution with retained reports.
+- Run and verify the new exact-source workflow on the current harness SHA; add a separate published-package baseline lane and CiAi policy evaluation after the host adapter contract is proven.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
 - Add integer fixed-width/variable-length encoding, signed zigzag, and complete round-trip cases.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
