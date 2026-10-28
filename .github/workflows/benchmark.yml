@@ -98,7 +98,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry 2>&1 | tee ../evidence/benchmark-smoke.log
+          # Isolate every invocation's artifacts: stale default BDN reports must never
+          # satisfy this run's coverage gate.
+          rm -rf ../evidence/smoke-artifacts
+          mkdir -p ../evidence/smoke-artifacts
+          dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry --artifacts "../evidence/smoke-artifacts" 2>&1 | tee ../evidence/benchmark-smoke.log
+          python3 ../benchmark/scripts/validate_benchmark_smoke.py --log ../evidence/benchmark-smoke.log --report-root ../evidence/smoke-artifacts
 
       - name: Collect controlled NuGet baseline and exact-source candidate measurements
         working-directory: benchmark
@@ -200,10 +205,10 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          report_dir="benchmark/BenchmarkDotNet.Artifacts/results"
-          if [[ ! -d "$report_dir" ]] || ! find "$report_dir" -type f \( -name '*report.csv' -o -name '*report-github.md' \) -print -quit | grep -q .; then
-            echo "::error::Benchmark smoke completed without a retained BenchmarkDotNet report."
-            find benchmark -maxdepth 5 -type f -print || true
+          report_dir="evidence/smoke-artifacts"
+          if [[ ! -d "$report_dir" ]] || ! find "$report_dir" -type f -name '*report.csv' -print -quit | grep -q .; then
+            echo "::error::Validated smoke artifacts do not contain BenchmarkDotNet CSV reports."
+            find evidence -maxdepth 6 -type f -print || true
             exit 1
           fi
           mkdir -p evidence
@@ -212,17 +217,7 @@ jobs:
             echo "::error::Benchmark smoke log is missing or empty."
             exit 1
           fi
-          if grep -Eiq 'BenchmarkDotNet.*(failed|error)|Benchmark process exited with code [1-9]|System\.(NullReferenceException|InvalidOperationException|ArgumentException|EndOfStreamException)|Exception has been thrown by the target of an invocation|GlobalSetup.*failed|GlobalCleanup.*failed' "$smoke_log"; then
-            echo "::error::Benchmark smoke log contains a benchmark failure or unhandled exception."
-            grep -Ein 'BenchmarkDotNet.*(failed|error)|Benchmark process exited with code [1-9]|System\.(NullReferenceException|InvalidOperationException|ArgumentException|EndOfStreamException)|Exception has been thrown by the target of an invocation|GlobalSetup.*failed|GlobalCleanup.*failed' "$smoke_log" || true
-            exit 1
-          fi
-          if ! grep -Eq 'Global total time:.*executed benchmarks: 44$' "$smoke_log"; then
-            echo "::error::Expected exactly 44 Dry benchmark cases (4 round-trip + 8 prepared-read + 12 integer + 20 buffer cases)."
-            grep -E 'Global total time:.*executed benchmarks:' "$smoke_log" || true
-            exit 1
-          fi
-          report_count="$(find "$report_dir" evidence/controlled -type f \( -name '*report.csv' -o -name '*report-github.md' \) | wc -l | tr -d ' ')"
+          report_count="$(find "$report_dir" -type f -name '*report.csv' | wc -l | tr -d ' ')"
           if [[ ! -s evidence/controlled-measurements.json ]]; then
             echo "::error::Controlled repeated measurements are missing."
             exit 1
