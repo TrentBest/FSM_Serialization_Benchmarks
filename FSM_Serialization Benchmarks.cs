@@ -121,7 +121,7 @@ public class ReadOperationBenchmarks
 
         // Prepare both streams outside the timed operation. The baseline owns its
         // independent payload array; MemoryBinaryStream copies the same payload.
-        _baseline = new MemoryStream(_data.ToArray(), writable: false);
+        _baseline = new MemoryStream((byte[])_data.Clone(), writable: false);
         _candidate = new MemoryBinaryStream(_data);
     }
 
