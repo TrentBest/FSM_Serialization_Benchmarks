@@ -218,8 +218,12 @@ jobs:
             grep -E 'Global total time:.*executed benchmarks:' "$smoke_log" || true
             exit 1
           fi
-          report_count="$(find "$report_dir" -type f \( -name '*report.csv' -o -name '*report-github.md' \) | wc -l | tr -d ' ')"
-          jq -n \
+          report_count="$(find "$report_dir" evidence/controlled -type f \( -name '*report.csv' -o -name '*report-github.md' \) | wc -l | tr -d ' ')"
+          if [[ ! -s evidence/controlled-measurements.json ]]; then
+            echo "::error::Controlled repeated measurements are missing."
+            exit 1
+          fi
+          jq -n --slurpfile controlled evidence/controlled-measurements.json \
             --arg schema "ciai.benchmark-host-evidence.v1" \
             --arg sourceRepository "TrentBest/TheSingularityWorkshop.FSM_Serialization" \
             --arg sourceSha "$SOURCE_SHA" \
@@ -228,19 +232,25 @@ jobs:
             --arg workflowPath ".github/workflows/benchmark.yml" \
             --arg runId "$RUN_ID" \
             --arg runAttempt "$RUN_ATTEMPT" \
-            --arg benchmarkLane "exact-source-project" \
-            --arg workloadIdentity "BinarySerializable_RoundTrip+ReadPreparedPayload+SER_INT+SER_BUF" \
+            --arg benchmarkLane "published-package-vs-exact-source" \
             --arg reportDirectory "$report_dir" \
             --arg reportCount "$report_count" \
-            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"not-evaluated",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:[],baselineMeasurementsNanoseconds:[],workloadIdentity:$workloadIdentity}' \
+            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"pending-policy-evaluation",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:$controlled[0].candidate,baselineMeasurementsNanoseconds:$controlled[0].baseline,workloadIdentity:$controlled[0].workloadIdentity}' \
             > evidence/benchmark-host-evidence.json
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
 
       - name: Evaluate evidence with CiAi policy
+        shell: bash
         run: |
+          set -euo pipefail
           dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/benchmark-host-evidence.json evidence/benchmark-policy-result.json
-          jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and (.Verdict // .verdict) == "not-evaluated" and ((.Errors // .errors) | index("benchmark.comparable-repeated-measurements-required") != null)' evidence/benchmark-policy-result.json
+          jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and ((.Verdict // .verdict) == "passed" or (.Verdict // .verdict) == "regression") and (.CandidateSampleCount // .candidateSampleCount) >= 5 and (.BaselineSampleCount // .baselineSampleCount) >= 5 and (.CandidateMedianNanoseconds // .candidateMedianNanoseconds) > 0 and (.BaselineMedianNanoseconds // .baselineMedianNanoseconds) > 0' evidence/benchmark-policy-result.json
+          verdict="$(jq -r '.Verdict // .verdict' evidence/benchmark-policy-result.json)"
+          if [[ "$verdict" == "regression" ]]; then
+            echo "::error::CiAi detected a median regression exceeding the configured tolerance."
+            exit 1
+          fi
 
       - name: Upload exact-SHA benchmark evidence
         if: always()
