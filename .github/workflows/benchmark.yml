@@ -100,6 +100,92 @@ jobs:
           set -euo pipefail
           dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry 2>&1 | tee ../evidence/benchmark-smoke.log
 
+      - name: Collect controlled NuGet baseline and exact-source candidate measurements
+        working-directory: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../evidence/controlled
+          # The smoke suite above remains the broad correctness/coverage gate. These are
+          # independent, same-runner launches of one identical BenchmarkDotNet filter.
+          dotnet restore "FSM_Serialization_Benchmarks.csproj" -p:UseSourceProject=false
+          dotnet build "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-restore -p:UseSourceProject=false
+          for sample in 1 2 3 4 5; do
+            echo "Published-package baseline sample $sample/5"
+            dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=false -- --filter "*BinarySerializable_RoundTrip*" --artifacts "../evidence/controlled/baseline-$sample" 2>&1 | tee "../evidence/controlled/baseline-$sample.log"
+          done
+          # Re-resolve assets and rebuild against the exact checked-out source project.
+          dotnet restore "FSM_Serialization_Benchmarks.csproj" -p:UseSourceProject=true
+          dotnet build "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-restore -p:UseSourceProject=true
+          for sample in 1 2 3 4 5; do
+            echo "Exact-source candidate sample $sample/5"
+            dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" --artifacts "../evidence/controlled/candidate-$sample" 2>&1 | tee "../evidence/controlled/candidate-$sample.log"
+          done
+          python3 - <<'PY'
+          import csv, glob, json, os, re, sys
+
+          root = "../evidence/controlled"
+          def parse_mean(raw):
+              value = raw.strip().replace(",", "")
+              match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\s*([a-zA-Zµμ]+)", value)
+              if not match:
+                  raise ValueError(f"Unrecognized BenchmarkDotNet Mean value: {raw!r}")
+              amount = float(match.group(1))
+              unit = match.group(2).lower().replace("μ", "µ")
+              factors = {"ns": 1.0, "nanosecond": 1.0, "nanoseconds": 1.0,
+                         "us": 1_000.0, "µs": 1_000.0, "microsecond": 1_000.0, "microseconds": 1_000.0,
+                         "ms": 1_000_000.0, "millisecond": 1_000_000.0, "milliseconds": 1_000_000.0,
+                         "s": 1_000_000_000.0, "second": 1_000_000_000.0, "seconds": 1_000_000_000.0}
+              if unit not in factors:
+                  raise ValueError(f"Unsupported BenchmarkDotNet time unit: {unit!r}")
+              return amount * factors[unit]
+
+          def sample(lane, index):
+              pattern = f"{root}/{lane}-{index}/results/*report.csv"
+              files = glob.glob(pattern, recursive=True)
+              if len(files) != 1:
+                  raise ValueError(f"{lane}-{index}: expected exactly one report CSV, found {files}")
+              with open(files[0], newline="", encoding="utf-8-sig") as handle:
+                  first = handle.read(4096)
+                  handle.seek(0)
+                  dialect = csv.Sniffer().sniff(first, delimiters=";,\t,")
+                  rows = list(csv.DictReader(handle, dialect=dialect))
+              if not rows:
+                  raise ValueError(f"{files[0]} contains no measurement rows")
+              normalized = {key.strip(): value for key, value in rows[0].items() if key is not None}
+              mean_key = next((key for key in normalized if key.lower() == "mean"), None)
+              method_key = next((key for key in normalized if key.lower() == "method"), None)
+              if mean_key is None or method_key is None:
+                  raise ValueError(f"{files[0]} lacks Method/Mean columns: {list(normalized)}")
+              param_keys = [key for key in normalized if any(word in key.lower() for word in ("param", "argument"))]
+              identity = normalized[method_key].strip()
+              for key in param_keys:
+                  identity += "|" + key + "=" + str(normalized[key]).strip()
+              value = parse_mean(normalized[mean_key])
+              if value <= 0:
+                  raise ValueError(f"{files[0]} has a non-positive measurement")
+              return value, identity, files[0]
+
+          result = {"schema":"ciai.controlled-measurements.v1","baseline":[],"candidate":[],"workloadIdentity":None,"reports":[]}
+          for lane in ("baseline", "candidate"):
+              identities = []
+              for index in range(1, 6):
+                  value, identity, report = sample(lane, index)
+                  result[lane].append(value)
+                  identities.append(identity)
+                  result["reports"].append(report)
+              if len(set(identities)) != 1:
+                  raise ValueError(f"{lane} runs did not select identical method/parameters: {identities}")
+              if result["workloadIdentity"] is None:
+                  result["workloadIdentity"] = identities[0]
+              elif result["workloadIdentity"] != identities[0]:
+                  raise ValueError(f"Baseline/candidate workload mismatch: {result['workloadIdentity']!r} vs {identities[0]!r}")
+          with open("../evidence/controlled-measurements.json", "w", encoding="utf-8") as handle:
+              json.dump(result, handle, indent=2)
+              handle.write("\n")
+          print(json.dumps({"workloadIdentity":result["workloadIdentity"],"baselineSamples":len(result["baseline"]),"candidateSamples":len(result["candidate"]),"reports":len(result["reports"])}, indent=2))
+          PY
+
       - name: Verify reports and write provenance
         shell: bash
         env:
