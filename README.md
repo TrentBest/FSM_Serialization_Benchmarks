@@ -22,7 +22,7 @@ BenchmarkDotNet cases have stable identities in the form `SER-<FAMILY>-<NNN>`. A
 
 Current measured families include:
 - Stream construction, read/write, materialization, positioning, and pack/unpack baselines are present on `development`.
-- Output-buffer strategies (`SER-BUF-001..005`) and primitive UInt32 encoding/decoding (`SER-INT-001..004`) exist on `master`, but have **not yet been reconciled into the current `development` harness**. They must not be counted as development-branch coverage until ported, built, and run on the active branch.
+- Output-buffer strategies (`SER-BUF-001..005`) and primitive UInt32 encoding/decoding (`SER-INT-001..004`) are now present on `development`. Their inclusion is not evidence of a successful benchmark run until CI builds the harness and retains reports for these cases.
 - Current workload parameters are 16, 1,024, 10,000, and 100,000 bytes.
 
 The catalog defines the exact contracts and caveats. These primitive cases do not establish the performance of an FSM definition codec that does not yet exist.
@@ -67,8 +67,8 @@ A successful workflow proves that the configured cases ran and reports were reta
 Outstanding work includes:
 - Run and verify the new exact-source workflow on the current harness SHA; add a separate published-package baseline lane and CiAi policy evaluation after the host adapter contract is proven.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
-- Reconcile the master-only output-buffer (`SER-BUF-001..005`) and integer (`SER-INT-001..004`) cases into `development` without rewriting historical IDs; run correctness checks and benchmark them on the active branch.
-- Extend integer coverage with signed zigzag and complete encode/decode round-trip cases after the existing master-only cases are integrated and verified.
+- Run the reconciled output-buffer (`SER-BUF-001..005`) and integer (`SER-INT-001..004`) families on `development`, retain reports, and compare only equivalent operations under recorded conditions.
+- Extend integer coverage with signed zigzag and complete encode/decode round-trip cases after the current families have been measured and reviewed.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
 - Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
 - Add malformed-input/resource-safety workloads where meaningful.
