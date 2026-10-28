@@ -93,6 +93,10 @@ jobs:
         working-directory: benchmark
         run: dotnet build "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-restore -p:UseSourceProject=true
 
+      - name: Test smoke evidence validator regression fixtures
+        working-directory: benchmark
+        run: python3 scripts/test_validate_benchmark_smoke.py
+
       - name: Run correctness-gated benchmark smoke
         working-directory: benchmark
         shell: bash
