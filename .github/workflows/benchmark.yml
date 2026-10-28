@@ -68,6 +68,14 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Checkout CiAi benchmark policy evaluator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: TrentBest/TheSingularityWorkshop.CiAi
+          ref: 43f4d4f2b509dbe5bc51bd97d6df08226e534c79
+          path: ciai
+          persist-credentials: false
+
       - name: Restore source solution
         run: dotnet restore source/TheSingularityWorkshop.FSM_Serialization.slnx
 
@@ -106,6 +114,7 @@ jobs:
             exit 1
           fi
           mkdir -p evidence
+          report_count="$(find "$report_dir" -type f \\( -name '*report.csv' -o -name '*report-github.md' \\) | wc -l | tr -d ' ')"
           jq -n \
             --arg schema "ciai.benchmark-host-evidence.v1" \
             --arg sourceRepository "TrentBest/TheSingularityWorkshop.FSM_Serialization" \
@@ -116,14 +125,18 @@ jobs:
             --arg runId "$RUN_ID" \
             --arg runAttempt "$RUN_ATTEMPT" \
             --arg benchmarkLane "exact-source-project" \
-            --arg correctnessGate "passed" \
-            --arg sourceTests "passed" \
-            --arg benchmarkSmoke "passed" \
+            --arg workloadIdentity "BinarySerializable_RoundTrip+ReadPreparedPayload" \
             --arg reportDirectory "$report_dir" \
-            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:$sourceTests,correctnessGate:$correctnessGate,benchmarkSmoke:$benchmarkSmoke,reportDirectory:$reportDirectory,performanceVerdict:"not-evaluated"}' \
+            --arg reportCount "$report_count" \
+            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),performanceVerdict:"not-evaluated",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:[],baselineMeasurementsNanoseconds:[],workloadIdentity:$workloadIdentity}' \
             > evidence/benchmark-host-evidence.json
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
+
+      - name: Evaluate evidence with CiAi policy
+        run: |
+          dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/benchmark-host-evidence.json evidence/benchmark-policy-result.json
+          jq -e '.schema == "ciai.benchmark-policy-result.v1" and .verdict == "not-evaluated" and (.errors | index("benchmark.comparable-repeated-measurements-required") != null)' evidence/benchmark-policy-result.json
 
       - name: Upload exact-SHA benchmark evidence
         if: always()
