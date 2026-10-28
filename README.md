@@ -62,17 +62,17 @@ A successful workflow proves that the configured cases ran and reports were reta
 
 ## 🟪 05 Readiness and next work
 
-**Harness readiness: provisional; not a package release verdict.** Stable names are attached to the current stream/round-trip cases, and a catalog records their timed contracts and caveats. The exact-source smoke passed in run [#40580919972](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40580919972), and the existing default-branch workflow completed both the exact-source and pinned published-package lanes in [run #40637381835](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40637381835). The living evidence-flow diagram remains conceptual documentation, not a live dashboard. CiAi policy evaluation and noise-aware performance verdicts remain outstanding.
+**Harness readiness: provisional; not a package release verdict.** The exact-source host and pinned CiAi policy evaluator are now verified end-to-end in [run #40761654535](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40761654535). The policy correctly returns `not-evaluated` until comparable repeated measurements exist. The earlier two-lane dispatch run [#40637381835](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40637381835) also confirms the pinned published-package and source lanes can execute. The living evidence-flow diagram remains conceptual documentation, not a live dashboard. Controlled candidate/baseline measurement collection and noise-aware verdicts remain outstanding.
 
 Outstanding work includes:
-- Run and verify the new exact-source workflow on the current harness SHA; add a separate published-package baseline lane and CiAi policy evaluation after the host adapter contract is proven.
+- Add a controlled published-package (`0.1.0-alpha.2`) baseline and exact-source candidate comparison for the same correctness-gated workload, with matching parameters and environment metadata; collect at least five valid samples per lane before allowing CiAi to issue a performance verdict.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
 - Run the reconciled output-buffer (`SER-BUF-001..005`) and integer (`SER-INT-001..004`) families on `development`, retain reports, and compare only equivalent operations under recorded conditions.
 - Extend integer coverage with signed zigzag and complete encode/decode round-trip cases after the current families have been measured and reviewed.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
 - Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
 - Add malformed-input/resource-safety workloads where meaningful.
-- Implement automated result interpretation with repeated comparisons, noise-aware regression policy, and historical deltas.
+- Exercise CiAi's actual `passed` and `regression` outcomes using comparable repeated samples, and preserve policy results alongside raw reports for historical deltas.
 - Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy. The existing successful full dispatch used the `master` workflow; the current `development` workflow still needs its own full exact-source run.
 - Resolve the documentation footer asset gap: `Avatar.jpg` was not found in the checked development tree or the searched Workshop source paths. Do not invent a path or imply the living SVG is the canonical footer replacement.
 
