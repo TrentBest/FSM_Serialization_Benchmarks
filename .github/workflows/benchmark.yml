@@ -87,7 +87,7 @@ jobs:
 
       - name: Run correctness-gated benchmark smoke
         working-directory: benchmark
-        run: dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" --job Dry
+        run: dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" --job Dry
 
       - name: Verify reports and write provenance
         shell: bash
