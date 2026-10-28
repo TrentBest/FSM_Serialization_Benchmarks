@@ -30,11 +30,13 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 | `SER-WRT-001` | `MemoryStream_Write` | Construct stream, write the parameterized byte array, return stream | Includes construction and write; returned stream is not disposed in the method |
 | `SER-WRT-002` | `MemoryBinaryStream_Write` | Construct stream, write the parameterized byte array, return stream | Includes construction and write; returned stream is not disposed in the method |
 | `SER-WRT-003` | `StreamBinaryStream_Write` | Construct wrapper and backing stream, write payload, return wrapper | Includes wrapper/backing construction and write |
-| `SER-RED-001` | `MemoryStream_Read` | Construct read-only stream over existing data and read into a preallocated buffer | Includes stream construction; destination buffer is reused |
-| `SER-RED-002` | `MemoryBinaryStream_Read` | Construct stream over existing data and read into a preallocated buffer | Includes stream construction; destination buffer is reused |
-| `SER-RED-003` | `StreamBinaryStream_Read` | Construct backing stream and wrapper, then read | Includes both stream constructions |
-| `SER-DAT-001` | `MemoryStream_ConstructWithData` | Construct a read-only `MemoryStream` over existing data | Does not copy the payload |
-| `SER-DAT-002` | `MemoryBinaryStream_ConstructWithData` | Construct a `MemoryBinaryStream` over existing data | Interpret ownership/copy behavior according to implementation contract |
+| `SER-RED-001` | `MemoryStream_Read` | Construct read-only stream over existing data and read into a preallocated buffer | Includes construction and reads without copying the input payload; end-to-end case, not an isolated read call |
+| `SER-RED-002` | `MemoryBinaryStream_Read` | Construct stream over existing data and read into a preallocated buffer | Includes construction and an input payload copy before reading; compare as end-to-end cost, not isolated read cost |
+| `SER-RED-003` | `StreamBinaryStream_Read` | Construct backing stream and wrapper, then read | Includes both stream constructions; end-to-end case, not an isolated read call |
+| `SER-RED-004` | `MemoryStream_ReadPreparedPayload` | Reset position and read a prepared payload into a reused buffer | Construction and payload setup occur outside timing; position reset is included |
+| `SER-RED-005` | `MemoryBinaryStream_ReadPreparedPayload` | Reset position and read the same prepared payload shape into a reused buffer | Construction and payload copy occur outside timing; position reset is included; compare with `SER-RED-004` for read-path overhead |
+| `SER-DAT-001` | `MemoryStream_ConstructWithData` | Construct a read-only `MemoryStream` over existing data | Wraps the caller's array without copying it; ownership and writability semantics differ from the candidate |
+| `SER-DAT-002` | `MemoryBinaryStream_ConstructWithData` | Construct a `MemoryBinaryStream` from existing data | Copies bytes into an expandable internal `MemoryStream`; the baseline wraps existing storage, so this is an intentional copy-vs-wrap comparison, not equivalent construction work |
 | `SER-ARR-001` | `MemoryStream_ToArray` | Write payload then materialize via `ToArray` | Includes construction, write, and output copy |
 | `SER-ARR-002` | `MemoryBinaryStream_ToArray` | Write payload then materialize via `ToArray` | Includes construction, write, and output copy |
 | `SER-POS-001` | `MemoryStream_PositionOverwrite` | Copy source bytes, seek to midpoint, overwrite one byte | Includes input copy and stream construction |
@@ -45,7 +47,7 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 
 The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`. The `SER-RT-001` case now validates correctness in a targeted `GlobalSetup` before timing: restored payload length and every byte must match the input, and the stream must have no unread/trailing bytes. The timed method returns the restored length as a low-cost completion signal; the byte comparison itself is intentionally outside the measured operation.
 
-The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. Read the timed-contract and caveat columns before comparing ratios. A fair comparison must either equalize those costs or explicitly label them as part of the operation being measured.
+The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. In particular, the original `SER-RED-001` through `SER-RED-003` cases time construction plus reading; `SER-RED-002` includes copying the entire input payload because `MemoryBinaryStream(byte[])` copies into an expandable stream, whereas `MemoryStream(byte[], writable: false)` wraps the caller's array. Do not interpret their ratio as isolated `Read`-method overhead. Use `SER-RED-004` versus `SER-RED-005` for a prepared-stream comparison, while remembering that the candidate's internal stream and baseline's fixed backing array are not identical storage implementations. `SER-DAT-001` versus `SER-DAT-002` explicitly measures wrap-vs-copy semantics, not equivalent construction work.
 
 ## Planned families — not yet measured
 
