@@ -75,7 +75,7 @@ Buffer cases deliberately measure different allocation strategies rather than cl
 
 ## Result interpretation
 
-A workflow pass means the configured smoke workload count was reached, the smoke log passed failure checks, correctness gates passed, and reports were produced. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. Compare equivalent cases under recorded runtime/hardware conditions, retain raw artifacts, and use repeated evidence before classifying a regression.
+A workflow pass means the configured smoke workload count was reached, the smoke log passed failure checks, correctness gates passed, and reports were produced. The current `development` host additionally evaluates evidence through CiAi; [run #40761654535](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40761654535) verified that integration and intentionally produced `not-evaluated` because no comparable repeated measurements were supplied. Neither a smoke pass nor a `not-evaluated` result is a performance win, regression verdict, domain-completeness result, or release authorization. Compare equivalent cases under recorded runtime/hardware conditions, retain raw artifacts, and use repeated evidence before classifying a regression.
 
 ## Related resources
 
