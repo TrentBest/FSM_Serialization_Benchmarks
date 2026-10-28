@@ -65,6 +65,18 @@ The `master` branch currently includes output-buffer strategy cases `SER-BUF-001
 
 Do not claim these planned families are implemented merely because they appear here.
 
+## Newly reconciled families on development
+
+The development branch now includes these benchmark methods:
+
+- `SER-BUF-001..005`: growing versus pre-sized `MemoryStream`, exact-array copy, and pooled-buffer copy/return (including clear-on-return).
+- `SER-INT-001..002`: fixed-width little-endian UInt32 encoding versus ULEB128 encoding.
+- `SER-INT-003..004`: fixed-width little-endian UInt32 decoding versus ULEB128 decoding.
+
+Integer fixtures use deterministic Small, Mixed, and Large value distributions. Payload preparation and correctness checks are outside the timed methods. The ULEB128 benchmark helper explicitly requires shortest-form canonical encodings and checks truncated input, UInt32 overflow, excess continuation bytes, and overlong encodings of zero and one. This is a benchmark-local contract; it does not claim that the production serializer implements or guarantees ULEB128.
+
+Buffer cases deliberately measure different allocation strategies rather than claiming every operation is semantically identical: the pool cases include rent/copy/return in the timed operation, and the clear-on-return case includes the additional clearing cost. Interpret their results as strategy comparisons, not as a drop-in production replacement.
+
 ## Result interpretation
 
 A workflow pass means configured workloads executed and reports were produced. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. Compare equivalent cases under recorded runtime/hardware conditions, retain raw artifacts, and use repeated evidence before classifying a regression.
