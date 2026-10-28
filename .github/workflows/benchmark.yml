@@ -210,11 +210,11 @@ jobs:
       - name: Verify reports and write provenance
         shell: bash
         env:
-          SOURCE_SHA: \${{ steps.source.outputs.sha }}
-          HARNESS_SHA: \${{ github.sha }}
-          RUN_ID: \${{ github.run_id }}
-          RUN_ATTEMPT: \${{ github.run_attempt }}
-          REPOSITORY: \${{ github.repository }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          HARNESS_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           report_dir="evidence/smoke-artifacts"
@@ -282,8 +282,6 @@ jobs:
           PY
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
-        env:
-          REPORT_COUNT: \${{ steps.source.outputs.sha && '' || '' }}
       - name: Verify CiAi regression verdict and host enforcement deterministically
         shell: bash
         run: |
