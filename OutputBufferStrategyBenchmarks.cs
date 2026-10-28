@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using System;
 using System.IO;
 using System.Buffers;
@@ -8,7 +7,6 @@ namespace FSM_Serialization_Benchmarks;
 
 /// <summary>Isolates output-buffer strategies over the same deterministic byte payload.</summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 [BenchmarkCategory("SER-BUF")]
 public class OutputBufferStrategyBenchmarks
 {

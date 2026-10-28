@@ -97,7 +97,6 @@ public class ReadBenchmarks : FSMSerializationBenchmarkBase
 /// Position reset is included equally in both methods so each invocation reads the full payload.
 /// </summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 public class ReadOperationBenchmarks
 {
     [Params(16, 1024, 10_000, 100_000)]
