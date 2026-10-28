@@ -114,7 +114,7 @@ jobs:
             exit 1
           fi
           mkdir -p evidence
-          report_count="$(find "$report_dir" -type f \\( -name '*report.csv' -o -name '*report-github.md' \\) | wc -l | tr -d ' ')"
+          report_count="$(find "$report_dir" -type f \( -name '*report.csv' -o -name '*report-github.md' \) | wc -l | tr -d ' ')"
           jq -n \
             --arg schema "ciai.benchmark-host-evidence.v1" \
             --arg sourceRepository "TrentBest/TheSingularityWorkshop.FSM_Serialization" \
