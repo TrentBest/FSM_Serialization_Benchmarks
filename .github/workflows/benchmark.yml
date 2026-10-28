@@ -157,10 +157,14 @@ jobs:
               method_key = next((key for key in normalized if key.lower() == "method"), None)
               if mean_key is None or method_key is None:
                   raise ValueError(f"{files[0]} lacks Method/Mean columns: {list(normalized)}")
-              param_keys = [key for key in normalized if any(word in key.lower() for word in ("param", "argument"))]
-              identity = normalized[method_key].strip()
-              for key in param_keys:
-                  identity += "|" + key + "=" + str(normalized[key]).strip()
+              metric_names = {"mean", "error", "stddev", "median", "min", "max", "q1", "q3", "iqr", "op/s", "operations/second", "ratio", "ratio sd", "allocated", "alloc ratio", "gen0", "gen1", "gen2", "completed work items", "lock contentions"}
+              identity_parts = [normalized[method_key].strip()]
+              # Keep parameter/configuration columns (e.g. Size), not just columns
+              # literally named Params; this prevents cross-parameter comparisons.
+              for key, value in normalized.items():
+                  if key.lower() != method_key.lower() and key.lower() not in metric_names and value is not None and str(value).strip():
+                      identity_parts.append(key.strip() + "=" + str(value).strip())
+              identity = "|".join(identity_parts)
               value = parse_mean(normalized[mean_key])
               if value <= 0:
                   raise ValueError(f"{files[0]} has a non-positive measurement")
