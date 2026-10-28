@@ -201,6 +201,11 @@ public class SerializationContractBenchmarks : FSMSerializationBenchmarkBase
     [GlobalSetup(Target = nameof(BinarySerializable_RoundTrip))]
     public void ValidateRoundTripCorrectness()
     {
+        // BenchmarkDotNet does not guarantee base/derived GlobalSetup ordering.
+        // Ensure the inherited payload fixture exists before validating this target.
+        if (Data is null)
+            Setup();
+
         var value = new BenchmarkValue(Data);
 
         using var stream = new MemoryBinaryStream();
