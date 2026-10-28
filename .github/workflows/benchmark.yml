@@ -136,7 +136,7 @@ jobs:
       - name: Evaluate evidence with CiAi policy
         run: |
           dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/benchmark-host-evidence.json evidence/benchmark-policy-result.json
-          jq -e '.schema == "ciai.benchmark-policy-result.v1" and .verdict == "not-evaluated" and (.errors | index("benchmark.comparable-repeated-measurements-required") != null)' evidence/benchmark-policy-result.json
+          jq -e '.Schema == "ciai.benchmark-policy-result.v1" and .Verdict == "not-evaluated" and (.Errors | index("benchmark.comparable-repeated-measurements-required") != null)' evidence/benchmark-policy-result.json
 
       - name: Upload exact-SHA benchmark evidence
         if: always()
