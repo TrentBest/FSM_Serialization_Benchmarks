@@ -49,9 +49,13 @@ The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`
 
 The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. In particular, the original `SER-RED-001` through `SER-RED-003` cases time construction plus reading; `SER-RED-002` includes copying the entire input payload because `MemoryBinaryStream(byte[])` copies into an expandable stream, whereas `MemoryStream(byte[], writable: false)` wraps the caller's array. Do not interpret their ratio as isolated `Read`-method overhead. Use `SER-RED-004` versus `SER-RED-005` for a prepared-stream comparison, while remembering that the candidate's internal stream and baseline's fixed backing array are not identical storage implementations. `SER-DAT-001` versus `SER-DAT-002` explicitly measures wrap-vs-copy semantics, not equivalent construction work.
 
-## Planned families — not yet measured
+## Families present on `master` but not yet reconciled into `development`
 
-- Integer fixed-width/variable-length encode and decode, including signed zigzag and full round-trip cases.
+The `master` branch currently includes output-buffer strategy cases `SER-BUF-001..005` and primitive UInt32 encoding/decoding cases `SER-INT-001..004`. They are documented in the [master catalog](https://github.com/TrentBest/FSM_Serialization_Benchmarks/blob/master/docs/BENCHMARK_CATALOG.md), but are not present in the current `development` harness source. Do not count them as current development coverage until the branch reconciliation is complete and the active branch has passed correctness and benchmark execution.
+
+## Planned families — not yet measured on `development`
+
+- Integer fixed-width/variable-length encode and decode, including signed zigzag and full round-trip cases (the basic unsigned encode/decode cases are present on `master` only for now).
 - String encode/decode, including empty, short, typical, and large values.
 - Reference/table operations, layout and size calculation.
 - Concrete FSM definition workloads only after the format owner defines a real codec and compatibility contract.
