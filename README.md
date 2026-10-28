@@ -21,8 +21,8 @@ This README follows the Workshop's shared [Documentation Standard](https://githu
 BenchmarkDotNet cases have stable identities in the form `SER-<FAMILY>-<NNN>`. An ID names the operation and semantic contract, not a performance promise. See the [Benchmark Catalog](docs/BENCHMARK_CATALOG.md) before adding, retiring, or comparing a case.
 
 Current measured families include:
-- Stream construction, read/write, materialization, positioning, and pack/unpack baselines.
-- Output-buffer strategy and primitive integer-encoding cases are planned follow-up families; do not infer that they are present in the current harness source until the corresponding cases appear in the catalog.
+- Stream construction, read/write, materialization, positioning, and pack/unpack baselines are present on `development`.
+- Output-buffer strategies (`SER-BUF-001..005`) and primitive UInt32 encoding/decoding (`SER-INT-001..004`) exist on `master`, but have **not yet been reconciled into the current `development` harness**. They must not be counted as development-branch coverage until ported, built, and run on the active branch.
 - Current workload parameters are 16, 1,024, 10,000, and 100,000 bytes.
 
 The catalog defines the exact contracts and caveats. These primitive cases do not establish the performance of an FSM definition codec that does not yet exist.
@@ -67,12 +67,13 @@ A successful workflow proves that the configured cases ran and reports were reta
 Outstanding work includes:
 - Run and verify the new exact-source workflow on the current harness SHA; add a separate published-package baseline lane and CiAi policy evaluation after the host adapter contract is proven.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
-- Add integer fixed-width/variable-length encoding, signed zigzag, and complete round-trip cases.
+- Reconcile the master-only output-buffer (`SER-BUF-001..005`) and integer (`SER-INT-001..004`) cases into `development` without rewriting historical IDs; run correctness checks and benchmark them on the active branch.
+- Extend integer coverage with signed zigzag and complete encode/decode round-trip cases after the existing master-only cases are integrated and verified.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
 - Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
 - Add malformed-input/resource-safety workloads where meaningful.
 - Implement automated result interpretation with repeated comparisons, noise-aware regression policy, and historical deltas.
-- Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy.
+- Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy. The existing successful full dispatch used the `master` workflow; the current `development` workflow still needs its own full exact-source run.
 - Resolve the documentation footer asset gap: `Avatar.jpg` was not found in the checked development tree or the searched Workshop source paths. Do not invent a path or imply the living SVG is the canonical footer replacement.
 
 ## Evidence discipline
