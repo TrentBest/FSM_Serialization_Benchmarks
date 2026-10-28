@@ -16,7 +16,7 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 - Format: `SER-<FAMILY>-<NNN>`.
 - Keep an ID when its semantic contract remains unchanged; do not reuse retired IDs.
 - A material change to what is timed requires a new ID or an explicitly documented contract revision.
-- BenchmarkDotNet parameters are part of the workload identity in a result row. The current size parameter is 16, 1,024, 10,000, and 100,000 bytes.
+- BenchmarkDotNet parameters are part of the workload identity in a result row. Stream and buffer size parameters are 16, 1,024, 10,000, and 100,000 bytes; integer cases use Small, Mixed, and Large distributions of 4,096 UInt32 values each.
 - Correctness is a separate gate from speed. Preserve raw BenchmarkDotNet reports and the exact source/harness commit and environment.
 - These are stream/primitive-contract benchmarks, not evidence for a production FSM definition codec.
 
@@ -41,7 +41,7 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 | `SER-ARR-002` | `MemoryBinaryStream_ToArray` | Write payload then materialize via `ToArray` | Includes construction, write, and output copy |
 | `SER-POS-001` | `MemoryStream_PositionOverwrite` | Copy source bytes, seek to midpoint, overwrite one byte | Includes input copy and stream construction |
 | `SER-POS-002` | `MemoryBinaryStream_PositionOverwrite` | Copy source bytes, seek to midpoint, overwrite one byte | Includes input copy and stream construction |
-| `SER-RT-001` | `BinarySerializable_RoundTrip` | Pack a length-prefixed payload and unpack it into a new object | Includes payload/object allocation, encoding, decoding, and stream work; this is a harness fixture, not a production codec |
+| `SER-RT-001` | `BinarySerializable_RoundTrip` | Pack a length-prefixed payload and unpack it into a new object | Includes payload/object allocation, encoding, decoding, and stream work; this is a harness fixture, not a production codec |\n| `SER-BUF-001` | `SER_BUF_001_MemoryStream_Grow` | Write the payload to a growing `MemoryStream` | Includes stream construction, growth, write, and disposal |\n| `SER-BUF-002` | `SER_BUF_002_MemoryStream_Presize` | Write the payload to a pre-sized `MemoryStream` | Includes stream construction, write, and disposal; capacity differs from the growing case |\n| `SER-BUF-003` | `SER_BUF_003_ExactArray_Copy` | Allocate an exact-size array and copy payload bytes | Measures allocation plus copy, not a stream API |\n| `SER-BUF-004` | `SER_BUF_004_ArrayPool_RentCopyReturn` | Rent pooled storage, copy bytes, return storage | Pool rent/return costs and oversized rented arrays are part of the strategy |\n| `SER-BUF-005` | `SER_BUF_005_ArrayPool_RentCopyClearReturn` | Rent pooled storage, copy bytes, clear and return storage | Includes clearing cost on return |\n| `SER-INT-001` | `SER_INT_001_FixedWidthUInt32` | Encode 4,096 UInt32 values as little-endian fixed-width integers | Output array allocation is timed; the buffer is sized to fixed-width maximum |\n| `SER-INT-002` | `SER_INT_002_Uleb128UInt32` | Encode the same values as canonical ULEB128 | Output array allocation and encoding are timed; local ULEB128 is not a production contract |\n| `SER-INT-003` | `SER_INT_003_FixedWidthUInt32_Decode` | Decode the prepared fixed-width payload | Payload setup and correctness checks are outside timing |\n| `SER-INT-004` | `SER_INT_004_Uleb128UInt32_Decode` | Decode the prepared canonical ULEB128 payload | Payload setup and malformed-input checks are outside timing |
 
 ## Parameters and correctness
 
@@ -49,13 +49,13 @@ The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`
 
 The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. In particular, the original `SER-RED-001` through `SER-RED-003` cases time construction plus reading; `SER-RED-002` includes copying the entire input payload because `MemoryBinaryStream(byte[])` copies into an expandable stream, whereas `MemoryStream(byte[], writable: false)` wraps the caller's array. Do not interpret their ratio as isolated `Read`-method overhead. Use `SER-RED-004` versus `SER-RED-005` for a prepared-stream comparison, while remembering that the candidate's internal stream and baseline's fixed backing array are not identical storage implementations. `SER-DAT-001` versus `SER-DAT-002` explicitly measures wrap-vs-copy semantics, not equivalent construction work.
 
-## Families present on `master` but not yet reconciled into `development`
+## Current development coverage
 
-The `master` branch currently includes output-buffer strategy cases `SER-BUF-001..005` and primitive UInt32 encoding/decoding cases `SER-INT-001..004`. They are documented in the [master catalog](https://github.com/TrentBest/FSM_Serialization_Benchmarks/blob/master/docs/BENCHMARK_CATALOG.md), but are not present in the current `development` harness source. Do not count them as current development coverage until the branch reconciliation is complete and the active branch has passed correctness and benchmark execution.
+The current `development` harness contains the stream cases above plus `SER-BUF-001..005` and `SER-INT-001..004`. These are implemented benchmark families, but their presence in source is not proof of a successful run; CI must verify the intended case count and correctness gates before calling smoke execution successful.
 
-## Planned families — not yet measured on `development`
+## Planned families — not yet measured
 
-- Integer fixed-width/variable-length encode and decode, including signed zigzag and full round-trip cases (the basic unsigned encode/decode cases are present on `master` only for now).
+- Signed integer encodings such as zigzag, plus dedicated integer round-trip and payload-size reporting.
 - String encode/decode, including empty, short, typical, and large values.
 - Reference/table operations, layout and size calculation.
 - Concrete FSM definition workloads only after the format owner defines a real codec and compatibility contract.
@@ -65,21 +65,17 @@ The `master` branch currently includes output-buffer strategy cases `SER-BUF-001
 
 Do not claim these planned families are implemented merely because they appear here.
 
-## Newly reconciled families on development
+## Integer fixture and buffer strategy notes
 
-The development branch now includes these benchmark methods:
+Integer encode and decode cases share deterministic Small, Mixed, and Large sequences of 4,096 UInt32 values. Each sequence repeats an edge-rich pattern to amortize invocation overhead while retaining values near ULEB128 width boundaries and UInt32 extremes. The same distribution produces identical values for fixed-width and ULEB128 comparisons. Payload preparation and correctness checks are outside the timed decode methods; encode output allocation remains timed.
 
-- `SER-BUF-001..005`: growing versus pre-sized `MemoryStream`, exact-array copy, and pooled-buffer copy/return (including clear-on-return).
-- `SER-INT-001..002`: fixed-width little-endian UInt32 encoding versus ULEB128 encoding.
-- `SER-INT-003..004`: fixed-width little-endian UInt32 decoding versus ULEB128 decoding.
-
-Integer fixtures use deterministic Small, Mixed, and Large value distributions. Payload preparation and correctness checks are outside the timed methods. The ULEB128 benchmark helper explicitly requires shortest-form canonical encodings and checks truncated input, UInt32 overflow, excess continuation bytes, and overlong encodings of zero and one. This is a benchmark-local contract; it does not claim that the production serializer implements or guarantees ULEB128.
+The ULEB128 helper requires shortest-form canonical encodings and checks truncated input, UInt32 overflow, excess continuation bytes, and overlong encodings of zero and one. This is a benchmark-local contract; it does not claim that the production serializer implements or guarantees ULEB128.
 
 Buffer cases deliberately measure different allocation strategies rather than claiming every operation is semantically identical: the pool cases include rent/copy/return in the timed operation, and the clear-on-return case includes the additional clearing cost. Interpret their results as strategy comparisons, not as a drop-in production replacement.
 
 ## Result interpretation
 
-A workflow pass means configured workloads executed and reports were produced. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. Compare equivalent cases under recorded runtime/hardware conditions, retain raw artifacts, and use repeated evidence before classifying a regression.
+A workflow pass means the configured smoke workload count was reached, the smoke log passed failure checks, correctness gates passed, and reports were produced. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. It is not a performance win, a regression verdict, a domain-completeness result, or release authorization. Compare equivalent cases under recorded runtime/hardware conditions, retain raw artifacts, and use repeated evidence before classifying a regression.
 
 ## Related resources
 
@@ -94,4 +90,4 @@ A workflow pass means configured workloads executed and reports were produced. I
 
 ---
 
-<!-- Canonical Avatar.jpg footer not yet applied: no verified Avatar.jpg asset path was found. Do not substitute another image or invent a URL. -->
+<!-- Canonical Avatar.jpg footer still requires a verified repository asset path; do not substitute another image or invent a URL. -->

@@ -95,7 +95,10 @@ jobs:
 
       - name: Run correctness-gated benchmark smoke
         working-directory: benchmark
-        run: dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry 2>&1 | tee ../evidence/benchmark-smoke.log
 
       - name: Verify reports and write provenance
         shell: bash
@@ -114,6 +117,55 @@ jobs:
             exit 1
           fi
           mkdir -p evidence
+          smoke_log="evidence/benchmark-smoke.log"
+          if [[ ! -s "$smoke_log" ]]; then
+            echo "::error::Benchmark smoke log is missing or empty."
+            exit 1
+          fi
+          if grep -Eiq 'BenchmarkDotNet.*(failed|error)|Benchmark process exited with code [1-9]|System\.(NullReferenceException|InvalidOperationException|ArgumentException|EndOfStreamException)|Exception has been thrown by the target of an invocation|GlobalSetup.*failed|GlobalCleanup.*failed' "$smoke_log"; then
+            echo "::error::Benchmark smoke log contains a benchmark failure or unhandled exception."
+            grep -Ein 'BenchmarkDotNet.*(failed|error)|Benchmark process exited with code [1-9]|System\.(NullReferenceException|InvalidOperationException|ArgumentException|EndOfStreamException)|Exception has been thrown by the target of an invocation|GlobalSetup.*failed|GlobalCleanup.*failed' "$smoke_log" || true
+            exit 1
+          fi
+          if ! grep -Eq 'Global total time:.*executed benchmarks: 44
+            --arg schema "ciai.benchmark-host-evidence.v1" \
+            --arg sourceRepository "TrentBest/TheSingularityWorkshop.FSM_Serialization" \
+            --arg sourceSha "$SOURCE_SHA" \
+            --arg harnessRepository "$REPOSITORY" \
+            --arg harnessSha "$HARNESS_SHA" \
+            --arg workflowPath ".github/workflows/benchmark.yml" \
+            --arg runId "$RUN_ID" \
+            --arg runAttempt "$RUN_ATTEMPT" \
+            --arg benchmarkLane "exact-source-project" \
+            --arg workloadIdentity "BinarySerializable_RoundTrip+ReadPreparedPayload+SER_INT+SER_BUF" \
+            --arg reportDirectory "$report_dir" \
+            --arg reportCount "$report_count" \
+            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"not-evaluated",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:[],baselineMeasurementsNanoseconds:[],workloadIdentity:$workloadIdentity}' \
+            > evidence/benchmark-host-evidence.json
+          cp -R "$report_dir" evidence/benchmark-reports
+          cp -R TestResults evidence/source-test-results
+
+      - name: Evaluate evidence with CiAi policy
+        run: |
+          dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/benchmark-host-evidence.json evidence/benchmark-policy-result.json
+          jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and (.Verdict // .verdict) == "not-evaluated" and ((.Errors // .errors) | index("benchmark.comparable-repeated-measurements-required") != null)' evidence/benchmark-policy-result.json
+
+      - name: Upload exact-SHA benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: serialization-benchmark-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/
+            benchmark/BenchmarkDotNet.Artifacts/
+            TestResults/
+          if-no-files-found: warn
+          retention-days: 90
+ "$smoke_log"; then
+            echo "::error::Expected exactly 44 Dry benchmark cases (4 round-trip + 8 prepared-read + 12 integer + 20 buffer cases)."
+            grep -E 'Global total time:.*executed benchmarks:' "$smoke_log" || true
+            exit 1
+          fi
           report_count="$(find "$report_dir" -type f \( -name '*report.csv' -o -name '*report-github.md' \) | wc -l | tr -d ' ')"
           jq -n \
             --arg schema "ciai.benchmark-host-evidence.v1" \

@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using System;
 using System.Buffers.Binary;
 using System.IO;
@@ -8,7 +7,6 @@ using TheSingularityWorkshop.FSM_Serialization;
 namespace FSM_Serialization_Benchmarks;
 
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 public abstract class FSMSerializationBenchmarkBase
 {
     [Params(16, 1024, 10_000, 100_000)]

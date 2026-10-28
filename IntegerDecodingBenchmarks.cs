@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using System;
 using System.Buffers.Binary;
 
@@ -10,7 +9,6 @@ namespace FSM_Serialization_Benchmarks;
 /// The local ULEB128 contract requires shortest-form (canonical) encodings.
 /// </summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 [BenchmarkCategory("SER-INT")]
 public class IntegerDecodingBenchmarks
 {

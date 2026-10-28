@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using System;
 using System.Buffers.Binary;
 
@@ -10,7 +9,6 @@ namespace FSM_Serialization_Benchmarks;
 /// Correctness validation and fixture creation happen outside timed operations.
 /// </summary>
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net80)]
 [BenchmarkCategory("SER-INT")]
 public class IntegerEncodingBenchmarks
 {
@@ -70,13 +68,25 @@ public class IntegerEncodingBenchmarks
 
 internal static class IntegerBenchmarkFixtures
 {
-    internal static uint[] Values(string distribution) => distribution switch
+    internal const int ValuesPerDistribution = 4096;
+
+    internal static uint[] Values(string distribution)
     {
-        "Small" => new uint[] { 0, 1, 2, 7, 15, 31, 63, 127 },
-        "Mixed" => new uint[] { 0, 1, 127, 128, 255, 16_383, 16_384, 65_535, 1_000_000 },
-        "Large" => new uint[] { 0, 127, 128, 16_383, 16_384, 1_000_000, 0x7FFF_FFFF, 0xFFFF_FFFF },
-        _ => throw new InvalidOperationException($"Unknown distribution: {distribution}")
-    };
+        uint[] pattern = distribution switch
+        {
+            "Small" => new uint[] { 0, 1, 2, 7, 15, 31, 63, 127 },
+            "Mixed" => new uint[] { 0, 1, 127, 128, 255, 16_383, 16_384, 65_535, 1_000_000 },
+            "Large" => new uint[] { 0, 127, 128, 16_383, 16_384, 1_000_000, 0x7FFF_FFFF, 0xFFFF_FFFF },
+            _ => throw new InvalidOperationException($"Unknown distribution: {distribution}")
+        };
+
+        // Repeat the deterministic edge-rich pattern to amortize per-invocation overhead
+        // while preserving the same value sequence for encode and decode comparisons.
+        var values = new uint[ValuesPerDistribution];
+        for (int i = 0; i < values.Length; i++)
+            values[i] = pattern[i % pattern.Length];
+        return values;
+    }
 
     internal static int WriteUleb128(uint value, Span<byte> destination)
     {
