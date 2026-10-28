@@ -70,21 +70,21 @@ public class WriteBenchmarks : FSMSerializationBenchmarkBase
 
 public class ReadBenchmarks : FSMSerializationBenchmarkBase
 {
-    [Benchmark(Description = "SER-RED-001 | MemoryStream_Read", Baseline = true)]
+    [Benchmark(Description = "SER-RED-001 | MemoryStream_ConstructAndRead", Baseline = true)]
     public int MemoryStream_Read()
     {
         using var stream = new MemoryStream(Data, writable: false);
         return stream.Read(ReadBuffer);
     }
 
-    [Benchmark(Description = "SER-RED-002 | MemoryBinaryStream_Read")]
+    [Benchmark(Description = "SER-RED-002 | MemoryBinaryStream_ConstructAndRead")]
     public int MemoryBinaryStream_Read()
     {
         using var stream = new MemoryBinaryStream(Data);
         return stream.Read(ReadBuffer);
     }
 
-    [Benchmark(Description = "SER-RED-003 | StreamBinaryStream_Read")]
+    [Benchmark(Description = "SER-RED-003 | StreamBinaryStream_ConstructAndRead")]
     public int StreamBinaryStream_Read()
     {
         using var backing = new MemoryStream(Data, writable: false);
@@ -93,13 +93,67 @@ public class ReadBenchmarks : FSMSerializationBenchmarkBase
     }
 }
 
+/// <summary>
+/// Measures read-call cost separately from stream construction and payload copying.
+/// Both streams are prepared before measurement, with equivalent payload contents.
+/// Position reset is included equally in both methods so each invocation reads the full payload.
+/// </summary>
+[MemoryDiagnoser]
+[SimpleJob(RuntimeMoniker.Net80)]
+public class ReadOperationBenchmarks
+{
+    [Params(16, 1024, 10_000, 100_000)]
+    public int Size { get; set; }
+
+    private byte[] _data = null!;
+    private byte[] _readBuffer = null!;
+    private MemoryStream _baseline = null!;
+    private MemoryBinaryStream _candidate = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _data = new byte[Size];
+        _readBuffer = new byte[Size];
+
+        for (int i = 0; i < _data.Length; i++)
+            _data[i] = (byte)(i * 31);
+
+        // Prepare both streams outside the timed operation. The baseline owns its
+        // independent payload array; MemoryBinaryStream copies the same payload.
+        _baseline = new MemoryStream(_data.ToArray(), writable: false);
+        _candidate = new MemoryBinaryStream(_data);
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _baseline.Dispose();
+        _candidate.Dispose();
+    }
+
+    [Benchmark(Description = "SER-RED-004 | MemoryStream_ReadPreparedPayload", Baseline = true)]
+    public int MemoryStream_ReadPreparedPayload()
+    {
+        _baseline.Position = 0;
+        return _baseline.Read(_readBuffer);
+    }
+
+    [Benchmark(Description = "SER-RED-005 | MemoryBinaryStream_ReadPreparedPayload")]
+    public int MemoryBinaryStream_ReadPreparedPayload()
+    {
+        _candidate.Position = 0;
+        return _candidate.Read(_readBuffer);
+    }
+}
+
 public class ExistingDataConstructionBenchmarks : FSMSerializationBenchmarkBase
 {
-    [Benchmark(Description = "SER-DAT-001 | MemoryStream_ConstructWithData", Baseline = true)]
+    [Benchmark(Description = "SER-DAT-001 | MemoryStream_WrapExistingData", Baseline = true)]
     public MemoryStream MemoryStream_ConstructWithData()
         => new(Data, writable: false);
 
-    [Benchmark(Description = "SER-DAT-002 | MemoryBinaryStream_ConstructWithData")]
+    [Benchmark(Description = "SER-DAT-002 | MemoryBinaryStream_CopyExistingData")]
     public MemoryBinaryStream MemoryBinaryStream_ConstructWithData()
         => new(Data);
 }
