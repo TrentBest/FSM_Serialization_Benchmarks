@@ -238,10 +238,27 @@ jobs:
             --arg benchmarkLane "published-package-vs-exact-source" \
             --arg reportDirectory "$report_dir" \
             --arg reportCount "$report_count" \
-            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"pending-policy-evaluation",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:$controlled[0].candidate,baselineMeasurementsNanoseconds:$controlled[0].baseline,workloadIdentity:$controlled[0].workloadIdentity}' \
+            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,baselinePackageVersion:"0.1.0-alpha.2",sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"pending-policy-evaluation",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:$controlled[0].candidate,baselineMeasurementsNanoseconds:$controlled[0].baseline,workloadIdentity:$controlled[0].workloadIdentity}' \
             > evidence/benchmark-host-evidence.json
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
+
+      - name: Verify CiAi regression verdict and host enforcement deterministically
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Synthetic policy input exercises the host's negative path without relying
+          # on noisy real timings or deliberately regressing production code.
+          jq '.candidateMeasurementsNanoseconds=[120,121,119,122,120] | .baselineMeasurementsNanoseconds=[100,101,99,100,100] | .workloadIdentity="HOST-REGRESSION-FIXTURE"' \
+            evidence/benchmark-host-evidence.json > evidence/regression-fixture-evidence.json
+          dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/regression-fixture-evidence.json evidence/regression-fixture-result.json
+          jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and (.Verdict // .verdict) == "regression" and (.CandidateSampleCount // .candidateSampleCount) >= 5 and (.BaselineSampleCount // .baselineSampleCount) >= 5' evidence/regression-fixture-result.json
+          fixture_verdict="$(jq -r '.Verdict // .verdict' evidence/regression-fixture-result.json)"
+          if [[ "$fixture_verdict" != "regression" ]]; then
+            echo "::error::CiAi host failed to recognize the deterministic regression fixture."
+            exit 1
+          fi
+          echo "CiAi deterministic regression fixture correctly returned regression."
 
       - name: Evaluate evidence with CiAi policy
         shell: bash
