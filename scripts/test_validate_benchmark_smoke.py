@@ -56,8 +56,8 @@ class SmokeValidatorTests(unittest.TestCase):
         self.assertIn("44 expected case/parameter combinations", result.stdout)
 
     def test_tab_delimited_fresh_coverage_passes(self) -> None:
-        self.log.write_text("Global total time: 00:00:01, executed benchmarks: 44\\n", encoding="utf-8")
-        self.write_complete_report(delimiter="\\t")
+        self.log.write_text("Global total time: 00:00:01, executed benchmarks: 44\n", encoding="utf-8")
+        self.write_complete_report(delimiter="\t")
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("44 expected case/parameter combinations", result.stdout)
