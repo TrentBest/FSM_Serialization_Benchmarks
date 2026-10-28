@@ -29,7 +29,7 @@ class SmokeValidatorTests(unittest.TestCase):
             text=True, capture_output=True, check=False,
         )
 
-    def write_complete_report(self) -> None:
+    def write_complete_report(self, delimiter: str = ",") -> None:
         cases: list[tuple[str, str, str]] = []
         sizes = ("16", "1024", "10000", "100000")
         distributions = ("Small", "Mixed", "Large")
@@ -42,7 +42,7 @@ class SmokeValidatorTests(unittest.TestCase):
 
         path = self.reports / "smoke-report.csv"
         with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=["Method", "Size", "Distribution", "Mean"])
+            writer = csv.DictWriter(handle, fieldnames=["Method", "Size", "Distribution", "Mean"], delimiter=delimiter)
             writer.writeheader()
             for case_id, size, distribution in cases:
                 writer.writerow({"Method": case_id, "Size": size,
@@ -51,6 +51,13 @@ class SmokeValidatorTests(unittest.TestCase):
     def test_complete_fresh_coverage_passes(self) -> None:
         self.log.write_text("Global total time: 00:00:01, executed benchmarks: 44\n", encoding="utf-8")
         self.write_complete_report()
+        result = self.run_validator()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("44 expected case/parameter combinations", result.stdout)
+
+    def test_tab_delimited_fresh_coverage_passes(self) -> None:
+        self.log.write_text("Global total time: 00:00:01, executed benchmarks: 44\\n", encoding="utf-8")
+        self.write_complete_report(delimiter="\\t")
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("44 expected case/parameter combinations", result.stdout)
