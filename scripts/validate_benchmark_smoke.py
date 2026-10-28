@@ -88,7 +88,7 @@ def main() -> int:
                 sample = handle.read(4096)
                 handle.seek(0)
                 try:
-                    dialect = csv.Sniffer().sniff(sample, delimiters=",;\\t")
+                    dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
                 except csv.Error:
                     dialect = csv.excel
                 rows = list(csv.DictReader(handle, dialect=dialect))
