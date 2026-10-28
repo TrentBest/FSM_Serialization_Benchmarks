@@ -115,15 +115,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ../evidence/controlled
-          # The smoke suite above remains the broad correctness/coverage gate. These are
-          # independent, same-runner launches of one identical BenchmarkDotNet filter.
+          # Compare each parameter configuration independently. Never pool different
+          # sizes into one median; every workload needs five fresh launches per lane.
           dotnet restore "FSM_Serialization_Benchmarks.csproj" -p:UseSourceProject=false
           dotnet build "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-restore -p:UseSourceProject=false
           for sample in 1 2 3 4 5; do
             echo "Published-package baseline sample $sample/5"
             dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=false -- --filter "*BinarySerializable_RoundTrip*" --artifacts "../evidence/controlled/baseline-$sample" 2>&1 | tee "../evidence/controlled/baseline-$sample.log"
           done
-          # Re-resolve assets and rebuild against the exact checked-out source project.
           dotnet restore "FSM_Serialization_Benchmarks.csproj" -p:UseSourceProject=true
           dotnet build "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-restore -p:UseSourceProject=true
           for sample in 1 2 3 4 5; do
@@ -131,9 +130,11 @@ jobs:
             dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" --artifacts "../evidence/controlled/candidate-$sample" 2>&1 | tee "../evidence/controlled/candidate-$sample.log"
           done
           python3 - <<'PY'
-          import csv, glob, json, os, re, sys
+          import csv, glob, json, re
 
           root = "../evidence/controlled"
+          expected_sizes = {"16", "1024", "10000", "100000"}
+
           def parse_mean(raw):
               value = raw.strip().replace(",", "")
               match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\s*([a-zA-Zµμ]+)", value)
@@ -149,6 +150,8 @@ jobs:
                   raise ValueError(f"Unsupported BenchmarkDotNet time unit: {unit!r}")
               return amount * factors[unit]
 
+          metric_names = {"mean", "error", "stddev", "median", "min", "max", "q1", "q3", "iqr", "op/s", "operations/second", "ratio", "ratio sd", "allocated", "alloc ratio", "gen0", "gen1", "gen2", "completed work items", "lock contentions"}
+
           def sample(lane, index):
               pattern = f"{root}/{lane}-{index}/results/*report.csv"
               files = glob.glob(pattern, recursive=True)
@@ -157,56 +160,61 @@ jobs:
               with open(files[0], newline="", encoding="utf-8-sig") as handle:
                   first = handle.read(4096)
                   handle.seek(0)
-                  dialect = csv.Sniffer().sniff(first, delimiters=";,\t,")
+                  dialect = csv.Sniffer().sniff(first, delimiters=";,\t")
                   rows = list(csv.DictReader(handle, dialect=dialect))
               if not rows:
                   raise ValueError(f"{files[0]} contains no measurement rows")
-              normalized = {key.strip(): value for key, value in rows[0].items() if key is not None}
-              mean_key = next((key for key in normalized if key.lower() == "mean"), None)
-              method_key = next((key for key in normalized if key.lower() == "method"), None)
-              if mean_key is None or method_key is None:
-                  raise ValueError(f"{files[0]} lacks Method/Mean columns: {list(normalized)}")
-              metric_names = {"mean", "error", "stddev", "median", "min", "max", "q1", "q3", "iqr", "op/s", "operations/second", "ratio", "ratio sd", "allocated", "alloc ratio", "gen0", "gen1", "gen2", "completed work items", "lock contentions"}
-              identity_parts = [normalized[method_key].strip()]
-              # Keep parameter/configuration columns (e.g. Size), not just columns
-              # literally named Params; this prevents cross-parameter comparisons.
-              for key, value in normalized.items():
-                  if key.lower() != method_key.lower() and key.lower() not in metric_names and value is not None and str(value).strip():
-                      identity_parts.append(key.strip() + "=" + str(value).strip())
-              identity = "|".join(identity_parts)
-              value = parse_mean(normalized[mean_key])
-              if value <= 0:
-                  raise ValueError(f"{files[0]} has a non-positive measurement")
-              return value, identity, files[0]
+              found = {}
+              for row in rows:
+                  normalized = {key.strip(): value for key, value in row.items() if key is not None}
+                  mean_key = next((key for key in normalized if key.lower() == "mean"), None)
+                  method_key = next((key for key in normalized if key.lower() == "method"), None)
+                  if mean_key is None or method_key is None:
+                      raise ValueError(f"{files[0]} lacks Method/Mean columns: {list(normalized)}")
+                  identity_parts = [normalized[method_key].strip()]
+                  for key, value in normalized.items():
+                      if key.lower() != method_key.lower() and key.lower() not in metric_names and value is not None and str(value).strip():
+                          identity_parts.append(key.strip() + "=" + str(value).strip())
+                  identity = "|".join(identity_parts)
+                  value = parse_mean(normalized[mean_key])
+                  if value <= 0:
+                      raise ValueError(f"{files[0]} has a non-positive measurement for {identity}")
+                  if identity in found:
+                      raise ValueError(f"{files[0]} contains duplicate workload identity {identity!r}")
+                  found[identity] = value
+              sizes = {identity.rsplit("Size=", 1)[-1] for identity in found if "|Size=" in identity}
+              if sizes != expected_sizes:
+                  raise ValueError(f"{files[0]} expected sizes {sorted(expected_sizes)}, found {sorted(sizes)}; identities={sorted(found)}")
+              return found, files[0]
 
-          result = {"schema":"ciai.controlled-measurements.v1","baseline":[],"candidate":[],"workloadIdentity":None,"reports":[]}
+          result = {"schema":"ciai.controlled-measurements.v2","expectedSamplesPerLane":5,"workloads":{},"reports":[]}
           for lane in ("baseline", "candidate"):
-              identities = []
               for index in range(1, 6):
-                  value, identity, report = sample(lane, index)
-                  result[lane].append(value)
-                  identities.append(identity)
+                  measurements, report = sample(lane, index)
                   result["reports"].append(report)
-              if len(set(identities)) != 1:
-                  raise ValueError(f"{lane} runs did not select identical method/parameters: {identities}")
-              if result["workloadIdentity"] is None:
-                  result["workloadIdentity"] = identities[0]
-              elif result["workloadIdentity"] != identities[0]:
-                  raise ValueError(f"Baseline/candidate workload mismatch: {result['workloadIdentity']!r} vs {identities[0]!r}")
+                  for identity, value in measurements.items():
+                      workload = result["workloads"].setdefault(identity, {"baseline":[],"candidate":[],"reports":[]})
+                      workload[lane].append(value)
+                      workload["reports"].append(report)
+          if len(result["workloads"]) != 4:
+              raise ValueError(f"Expected exactly four independent workload identities; found {sorted(result['workloads'])}")
+          for identity, workload in result["workloads"].items():
+              if len(workload["baseline"]) != 5 or len(workload["candidate"]) != 5:
+                  raise ValueError(f"{identity}: expected five samples per lane, got baseline={len(workload['baseline'])}, candidate={len(workload['candidate'])}")
           with open("../evidence/controlled-measurements.json", "w", encoding="utf-8") as handle:
               json.dump(result, handle, indent=2)
               handle.write("\n")
-          print(json.dumps({"workloadIdentity":result["workloadIdentity"],"baselineSamples":len(result["baseline"]),"candidateSamples":len(result["candidate"]),"reports":len(result["reports"])}, indent=2))
+          print(json.dumps({identity:{"baselineSamples":len(value["baseline"]),"candidateSamples":len(value["candidate"]),"baselineNanoseconds":value["baseline"],"candidateNanoseconds":value["candidate"]} for identity,value in sorted(result["workloads"].items())}, indent=2))
           PY
 
       - name: Verify reports and write provenance
         shell: bash
         env:
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-          HARNESS_SHA: ${{ github.sha }}
-          RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: \${{ steps.source.outputs.sha }}
+          HARNESS_SHA: \${{ github.sha }}
+          RUN_ID: \${{ github.run_id }}
+          RUN_ATTEMPT: \${{ github.run_attempt }}
+          REPOSITORY: \${{ github.repository }}
         run: |
           set -euo pipefail
           report_dir="evidence/smoke-artifacts"
@@ -215,42 +223,78 @@ jobs:
             find evidence -maxdepth 6 -type f -print || true
             exit 1
           fi
-          mkdir -p evidence
           smoke_log="evidence/benchmark-smoke.log"
           if [[ ! -s "$smoke_log" ]]; then
             echo "::error::Benchmark smoke log is missing or empty."
             exit 1
           fi
           report_count="$(find "$report_dir" -type f -name '*report.csv' | wc -l | tr -d ' ')"
+          export REPORT_COUNT="$report_count"
           if [[ ! -s evidence/controlled-measurements.json ]]; then
             echo "::error::Controlled repeated measurements are missing."
             exit 1
           fi
-          jq -n --slurpfile controlled evidence/controlled-measurements.json \
-            --arg schema "ciai.benchmark-host-evidence.v1" \
-            --arg sourceRepository "TrentBest/TheSingularityWorkshop.FSM_Serialization" \
-            --arg sourceSha "$SOURCE_SHA" \
-            --arg harnessRepository "$REPOSITORY" \
-            --arg harnessSha "$HARNESS_SHA" \
-            --arg workflowPath ".github/workflows/benchmark.yml" \
-            --arg runId "$RUN_ID" \
-            --arg runAttempt "$RUN_ATTEMPT" \
-            --arg benchmarkLane "published-package-vs-exact-source" \
-            --arg reportDirectory "$report_dir" \
-            --arg reportCount "$report_count" \
-            '{schema:$schema,sourceRepository:$sourceRepository,sourceSha:$sourceSha,harnessRepository:$harnessRepository,harnessSha:$harnessSha,workflowPath:$workflowPath,runId:($runId|tonumber),runAttempt:($runAttempt|tonumber),benchmarkLane:$benchmarkLane,baselinePackageVersion:"0.1.0-alpha.2",sourceTests:"passed",correctnessGate:"passed",benchmarkSmoke:"passed",reportDirectory:$reportDirectory,reportCount:($reportCount|tonumber),expectedBenchmarkCases:44,performanceVerdict:"pending-policy-evaluation",lane:$benchmarkLane,sourceTestsPassed:true,correctnessPassed:true,reportsPresent:true,provenanceComplete:true,candidateMeasurementsNanoseconds:$controlled[0].candidate,baselineMeasurementsNanoseconds:$controlled[0].baseline,workloadIdentity:$controlled[0].workloadIdentity}' \
-            > evidence/benchmark-host-evidence.json
+          mkdir -p evidence/workloads evidence/benchmark-policy-results
+          python3 - <<'PY'
+          import json, os, re
+          with open("evidence/controlled-measurements.json", encoding="utf-8") as handle:
+              controlled = json.load(handle)
+          base = {
+              "schema":"ciai.benchmark-host-evidence.v1",
+              "sourceRepository":"TrentBest/TheSingularityWorkshop.FSM_Serialization",
+              "sourceSha":os.environ["SOURCE_SHA"],
+              "harnessRepository":os.environ["REPOSITORY"],
+              "harnessSha":os.environ["HARNESS_SHA"],
+              "workflowPath":".github/workflows/benchmark.yml",
+              "runId":int(os.environ["RUN_ID"]),
+              "runAttempt":int(os.environ["RUN_ATTEMPT"]),
+              "benchmarkLane":"published-package-vs-exact-source",
+              "baselinePackageVersion":"0.1.0-alpha.2",
+              "sourceTests":"passed","correctnessGate":"passed","benchmarkSmoke":"passed",
+              "reportDirectory":"evidence/smoke-artifacts","reportCount":int(os.environ["REPORT_COUNT"]),
+              "expectedBenchmarkCases":44,"performanceVerdict":"pending-policy-evaluation",
+              "lane":"published-package-vs-exact-source","sourceTestsPassed":True,
+              "correctnessPassed":True,"reportsPresent":True,"provenanceComplete":True
+          }
+          index = []
+          for identity, measurements in sorted(controlled["workloads"].items()):
+              slug = re.sub(r"[^A-Za-z0-9._-]+", "-", identity).strip("-")
+              evidence = dict(base)
+              evidence.update({
+                  "candidateMeasurementsNanoseconds":measurements["candidate"],
+                  "baselineMeasurementsNanoseconds":measurements["baseline"],
+                  "workloadIdentity":identity,
+                  "workloadEvidencePath":f"evidence/workloads/{slug}.json"
+              })
+              path = evidence["workloadEvidencePath"]
+              with open(path,"w",encoding="utf-8") as handle:
+                  json.dump(evidence,handle,indent=2)
+                  handle.write("\n")
+              index.append({"workloadIdentity":identity,"evidence":path,"result":f"evidence/benchmark-policy-results/{slug}.json"})
+          with open("evidence/workload-evidence-index.json","w",encoding="utf-8") as handle:
+              json.dump({"schema":"ciai.workload-evidence-index.v1","workloads":index},handle,indent=2)
+              handle.write("\n")
+          with open(index[0]["evidence"],encoding="utf-8") as handle:
+              first = json.load(handle)
+          with open("evidence/benchmark-host-evidence.json","w",encoding="utf-8") as handle:
+              json.dump(first,handle,indent=2)
+              handle.write("\n")
+          PY
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
-
+        env:
+          REPORT_COUNT: \${{ steps.source.outputs.sha && '' || '' }}
       - name: Verify CiAi regression verdict and host enforcement deterministically
         shell: bash
         run: |
           set -euo pipefail
-          # Synthetic policy input exercises the host's negative path without relying
-          # on noisy real timings or deliberately regressing production code.
+          fixture_source="$(find evidence/workloads -maxdepth 1 -type f -name '*.json' | sort | head -n 1)"
+          if [[ -z "$fixture_source" ]]; then
+            echo "::error::No per-workload evidence was generated for regression fixture."
+            exit 1
+          fi
           jq '.candidateMeasurementsNanoseconds=[120,121,119,122,120] | .baselineMeasurementsNanoseconds=[100,101,99,100,100] | .workloadIdentity="HOST-REGRESSION-FIXTURE"' \
-            evidence/benchmark-host-evidence.json > evidence/regression-fixture-evidence.json
+            "$fixture_source" > evidence/regression-fixture-evidence.json
           dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/regression-fixture-evidence.json evidence/regression-fixture-result.json
           jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and (.Verdict // .verdict) == "regression" and (.CandidateSampleCount // .candidateSampleCount) >= 5 and (.BaselineSampleCount // .baselineSampleCount) >= 5' evidence/regression-fixture-result.json
           fixture_verdict="$(jq -r '.Verdict // .verdict' evidence/regression-fixture-result.json)"
@@ -260,17 +304,41 @@ jobs:
           fi
           echo "CiAi deterministic regression fixture correctly returned regression."
 
-      - name: Evaluate evidence with CiAi policy
+      - name: Evaluate each workload with CiAi policy
         shell: bash
         run: |
           set -euo pipefail
-          dotnet run --project ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj --configuration Release -- evidence/benchmark-host-evidence.json evidence/benchmark-policy-result.json
-          jq -e '(.Schema // .schema) == "ciai.benchmark-policy-result.v1" and ((.Verdict // .verdict) == "passed" or (.Verdict // .verdict) == "regression") and (.CandidateSampleCount // .candidateSampleCount) >= 5 and (.BaselineSampleCount // .baselineSampleCount) >= 5 and (.CandidateMedianNanoseconds // .candidateMedianNanoseconds) > 0 and (.BaselineMedianNanoseconds // .baselineMedianNanoseconds) > 0' evidence/benchmark-policy-result.json
-          verdict="$(jq -r '.Verdict // .verdict' evidence/benchmark-policy-result.json)"
-          if [[ "$verdict" == "regression" ]]; then
-            echo "::error::CiAi detected a median regression exceeding the configured tolerance."
-            exit 1
-          fi
+          python3 - <<'PY'
+          import json, subprocess, sys
+          with open("evidence/workload-evidence-index.json",encoding="utf-8") as handle:
+              index = json.load(handle)["workloads"]
+          if len(index) != 4:
+              raise SystemExit(f"Expected four independent workloads, found {len(index)}")
+          summary = []
+          for item in index:
+              result_path = item["result"]
+              subprocess.run(["dotnet","run","--project","ciai/tools/CiAi.BenchmarkPolicy.Cli/CiAi.BenchmarkPolicy.Cli.csproj","--configuration","Release","--",item["evidence"],result_path],check=True)
+              with open(result_path,encoding="utf-8") as handle:
+                  result = json.load(handle)
+              verdict = result.get("Verdict",result.get("verdict"))
+              candidate_count = result.get("CandidateSampleCount",result.get("candidateSampleCount",0))
+              baseline_count = result.get("BaselineSampleCount",result.get("baselineSampleCount",0))
+              candidate_median = result.get("CandidateMedianNanoseconds",result.get("candidateMedianNanoseconds",0))
+              baseline_median = result.get("BaselineMedianNanoseconds",result.get("baselineMedianNanoseconds",0))
+              if result.get("Schema",result.get("schema")) != "ciai.benchmark-policy-result.v1":
+                  raise SystemExit(f"{item['workloadIdentity']}: unexpected result schema")
+              if verdict != "passed" and verdict != "regression":
+                  raise SystemExit(f"{item['workloadIdentity']}: policy did not produce a comparable verdict: {verdict}")
+              if candidate_count < 5 or baseline_count < 5 or candidate_median <= 0 or baseline_median <= 0:
+                  raise SystemExit(f"{item['workloadIdentity']}: missing repeated samples or positive medians")
+              summary.append({"workloadIdentity":item["workloadIdentity"],"verdict":verdict,"candidateMedianNanoseconds":candidate_median,"baselineMedianNanoseconds":baseline_median,"candidateSampleCount":candidate_count,"baselineSampleCount":baseline_count,"result":result_path})
+              if verdict == "regression":
+                  raise SystemExit(f"{item['workloadIdentity']}: CiAi detected a median regression beyond tolerance")
+          with open("evidence/benchmark-policy-summary.json","w",encoding="utf-8") as handle:
+              json.dump({"schema":"ciai.benchmark-policy-summary.v1","workloads":summary},handle,indent=2)
+              handle.write("\n")
+          print(json.dumps(summary,indent=2))
+          PY
 
       - name: Upload exact-SHA benchmark evidence
         if: always()
