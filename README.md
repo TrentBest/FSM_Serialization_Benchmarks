@@ -46,7 +46,18 @@ The intended automated design separates two lanes:
 - **Published-package baseline:** pinned to `TheSingularityWorkshop.FSM_Serialization` NuGet `0.1.0-alpha.2` for historical consumer comparisons.
 - **Development-source lane:** tests the source repository first, then builds and benchmarks a direct project reference at the requested full source SHA (or configured development ref).
 
-**Verified CI status (2026-10-28):** `.github/workflows/benchmark.yml` on `development` now runs the exact-source smoke and a controlled comparison against pinned NuGet `0.1.0-alpha.2`. [Run #40781193957](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40781193957) passed source build/tests, the 44-case Dry correctness gate, five independent baseline launches, five exact-source candidate launches, CiAi policy evaluation, and evidence upload. For the recorded `SER-RT-001 | BinarySerializable_RoundTrip` configuration `Size=16`, CiAi compared medians of 86.09 ns (published package) and 85.98 ns (exact source), a -0.1278% change, and returned `passed`. Artifact [serialization-benchmark-evidence-40781193957-1](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40781193957/artifacts/12857069013) is retained for 90 days. **Scope caveat:** the controlled CSV parser currently selects only the first report row (`Size=16`), not all four parameter sizes. This result is valid for that configuration only; it is not a verdict for sizes 1,024, 10,000, or 100,000, and the regression-failure path still needs explicit host verification. The older cross-repository dispatch run [#40637381835](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40637381835) remains evidence that the existing `master` workflow can run both the development-source and pinned published-package lanes; it is not the same as the newer development host adapter.
+**Verified CI status (2026-10-29):** the `.github/workflows/benchmark.yml` on `development` passed the exact-source run [#40792971412](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40792971412). The run restored, built, and tested FSM_Serialization at source SHA `da730f0e33239c6031e44fdcc5ee350ac57b385d`, built the benchmark harness at `3d66e9aa673ad7abe33d2abbcc18a9f4c88feadb` against that source, ran the 44-case Dry correctness-gated smoke, and collected five independent baseline and five candidate launches for each of four `SER-RT-001 | BinarySerializable_RoundTrip` parameter sizes. CiAi compared the pinned NuGet `0.1.0-alpha.2` package against exact source; all four real workloads returned `passed` under the 5% median-regression tolerance:
+
+| Size (bytes) | Published-package median | Exact-source median | Change | CiAi |
+|---:|---:|---:|---:|---|
+| 16 | 103.9 ns | 103.9 ns | 0.00% | passed |
+| 1,024 | 377.7 ns | 361.6 ns | -4.26% | passed |
+| 10,000 | 2,454.9 ns | 2,211.4 ns | -9.92% | passed |
+| 100,000 | 59,986.9 ns | 59,012.4 ns | -1.62% | passed |
+
+These are observed medians from five independent launches per side, on the same recorded BenchmarkDotNet configuration. They are preliminary controlled comparisons for this one round-trip workload and environment, not broad claims about every serializer operation or production workload. The run also executed a deterministic negative-path fixture: candidate samples around 120 ns against a 100 ns baseline produced `regression` (+20%), confirming the policy evaluator emits a regression verdict and the host's assertion recognizes it. The successful run retained 99 evidence/report files in artifact [serialization-benchmark-evidence-40792971412-1](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40792971412/artifacts/12863134670) (SHA-256 `32432649be7e4187259e4abc1f1b38aba626d8cf9e78d408e1bfc07fcaf149fd`; 90-day retention).
+
+The earlier [run #40781193957](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40781193957) is superseded for controlled per-size coverage by this run. The older cross-repository dispatch run [#40637381835](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40637381835) remains evidence that the existing `master` workflow can run both development-source and pinned published-package lanes; it is not the same as the newer `development` host adapter.
 
 Never merge or compare the lanes as if they were the same build. Each run should preserve the source/harness commits, package version or source identity, runtime, OS/CPU, configuration, parameters, BenchmarkDotNet reports, and correctness result.
 
@@ -62,18 +73,18 @@ A successful workflow proves that the configured cases ran and reports were reta
 
 ## 🟪 05 Readiness and next work
 
-**Harness readiness: provisional; not a package release verdict.** The first repeated-measurement comparison and CiAi `passed` outcome are verified in [run #40781193957](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40781193957), but only for `SER-RT-001` at `Size=16`. The living evidence-flow diagram remains conceptual documentation, not a live dashboard. Broader per-parameter comparison and explicit regression-path verification remain outstanding.
+**Harness readiness: provisional; not a package release verdict.** Four per-size controlled comparisons and CiAi policy outcomes are verified in [run #40792971412](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40792971412), each with five baseline and five candidate launches. The deterministic regression fixture also passed. The living evidence-flow diagram remains conceptual documentation, not a live dashboard; broader workload-family coverage and independent repeat runs remain outstanding.
 
 Outstanding work includes:
-- Extend controlled comparison parsing so each intended `Size` parameter (16, 1,024, 10,000, 100,000) gets its own comparable baseline/candidate evidence and CiAi verdict; do not pool unlike parameter sizes into one median. Keep at least five valid samples per side and preserve the package version explicitly in provenance.
+- Repeat the four-size controlled comparison on a later run to understand run-to-run noise, then extend the same per-parameter evidence pattern to additional workload families. Keep at least five valid samples per side and preserve package version explicitly in provenance.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
 - Run the reconciled output-buffer (`SER-BUF-001..005`) and integer (`SER-INT-001..004`) families on `development`, retain reports, and compare only equivalent operations under recorded conditions.
 - Extend integer coverage with signed zigzag and complete encode/decode round-trip cases after the current families have been measured and reviewed.
 - Add string, reference/table, layout/sizing, and concrete FSM definition workloads after the relevant format contract exists.
 - Add fair adapters for mature serializer comparisons with equivalent semantics and explicit setup/allocation costs.
 - Add malformed-input/resource-safety workloads where meaningful.
-- Exercise CiAi's actual `regression` outcome in the host workflow using controlled fixture/evidence injection or another deterministic test path, and preserve policy results alongside raw reports for historical deltas. The real `passed` path is verified for `Size=16` in run #40781193957.
-- Verify cross-repository dispatch and the actual workflow files/runs before claiming the pipeline is healthy. The existing successful full dispatch used the `master` workflow; the current `development` workflow still needs its own full exact-source run.
+- Preserve the deterministic regression fixture and expand host-level tests to cover incomplete/missing evidence as well as regression; the current run verifies the regression verdict assertion and four real `passed` outcomes.
+- Verify cross-repository dispatch and the source repository's build/test/coverage/package/docs policy before claiming the full CiAi migration is complete. The benchmark `development` host adapter now has a successful exact-source run, but this does not by itself prove the source repository's entire CI is governed by CiAi.
 - Resolve the documentation footer asset gap: `Avatar.jpg` was not found in the checked development tree or the searched Workshop source paths. Do not invent a path or imply the living SVG is the canonical footer replacement.
 
 ## Evidence discipline
