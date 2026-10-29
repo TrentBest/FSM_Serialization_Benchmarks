@@ -14,7 +14,7 @@ This README follows the Workshop's shared [Documentation Standard](https://githu
   <a href="docs/GALLERY.md"><img src="docs/assets/serialization-evidence-flow.svg" alt="Conceptual living diagram: deterministic input passes through a named operation and correctness gate before timing and evidence retention. A failed correctness gate invalidates performance interpretation." width="1000" /></a>
 </p>
 
-**[Explore the living Gallery](docs/GALLERY.md)** · **[Read the Benchmark Catalog](docs/BENCHMARK_CATALOG.md)** · **[Review documentation coverage](docs/DOCUMENTATION_INVENTORY.md)**
+**[Explore the living Gallery](docs/GALLERY.md)** · **[Read the Benchmark Catalog](docs/BENCHMARK_CATALOG.md)** · **[Review historical alpha.2 results](docs/HISTORICAL_ALPHA2_RESULTS.md)** · **[Review documentation coverage](docs/DOCUMENTATION_INVENTORY.md)**
 
 ## 🟦 01 What
 
