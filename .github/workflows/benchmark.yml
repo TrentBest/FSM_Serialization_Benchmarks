@@ -258,7 +258,7 @@ jobs:
           }
           index = []
           for identity, measurements in sorted(controlled["workloads"].items()):
-              slug = re.sub(r"[^A-Za-z0-9._-]+", "-", identity).strip("-")
+              slug = "workload-" + __import__("hashlib").sha256(identity.encode("utf-8")).hexdigest()[:16]
               evidence = dict(base)
               evidence.update({
                   "candidateMeasurementsNanoseconds":measurements["candidate"],
