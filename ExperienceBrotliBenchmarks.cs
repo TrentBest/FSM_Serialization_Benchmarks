@@ -43,6 +43,9 @@ public class ExperienceBrotliBenchmarks
 
         // A second independent compression must produce the same bytes for this
         // runtime/level/fixture. This checks repeatability within the measured environment.
+        double ratio = (double)_compressed.Length / _payload.Length;
+        Console.WriteLine($"SER-EXP-METRIC|size={Size}|kind={PayloadKind}|level={Level}|logicalBytes={_payload.Length}|storedBytes={_compressed.Length}|ratio={ratio:F6}");
+
         byte[] repeated = Compress(_payload, Level);
         if (!repeated.AsSpan().SequenceEqual(_compressed))
             throw new InvalidOperationException("Brotli output was not repeatable within the benchmark environment.");
