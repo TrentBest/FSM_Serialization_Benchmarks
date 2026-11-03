@@ -109,6 +109,23 @@ jobs:
           dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry --artifacts "../evidence/smoke-artifacts" 2>&1 | tee ../evidence/benchmark-smoke.log
           python3 ../benchmark/scripts/validate_benchmark_smoke.py --log ../evidence/benchmark-smoke.log --report-root ../evidence/smoke-artifacts
 
+      - name: Run Experience Brotli codec smoke
+        working-directory: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ../evidence/experience-brotli
+          mkdir -p ../evidence/experience-brotli
+          dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*Brotli_*" --job Dry --artifacts "../evidence/experience-brotli/artifacts" 2>&1 | tee ../evidence/experience-brotli/smoke.log
+          if ! find ../evidence/experience-brotli/artifacts -type f -name '*report.csv' -print -quit | grep -q .; then
+            echo "::error::Experience Brotli smoke did not produce a BenchmarkDotNet CSV report."
+            exit 1
+          fi
+          if grep -Eiq 'BenchmarkDotNet.*(failed|error|exception)|There are not any benchmarks|No benchmarks found' ../evidence/experience-brotli/smoke.log; then
+            echo "::error::Experience Brotli smoke log contains a benchmark failure."
+            exit 1
+          fi
+
       - name: Collect controlled NuGet baseline and exact-source candidate measurements
         working-directory: benchmark
         shell: bash
