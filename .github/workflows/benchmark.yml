@@ -5,6 +5,8 @@ on:
     branches: [development]
   repository_dispatch:
     types: [serialization-development-changed]
+  pull_request:
+    branches: [development]
   workflow_dispatch:
     inputs:
       source_sha:
@@ -127,6 +129,7 @@ jobs:
           fi
 
       - name: Collect controlled NuGet baseline and exact-source candidate measurements
+        if: github.event_name != 'pull_request'
         working-directory: benchmark
         shell: bash
         run: |
@@ -225,6 +228,7 @@ jobs:
           PY
 
       - name: Verify reports and write provenance
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
@@ -300,6 +304,7 @@ jobs:
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
       - name: Verify CiAi regression verdict and host enforcement deterministically
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -320,6 +325,7 @@ jobs:
           echo "CiAi deterministic regression fixture correctly returned regression."
 
       - name: Evaluate each workload with CiAi policy
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
