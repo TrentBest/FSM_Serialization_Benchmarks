@@ -2,7 +2,7 @@ name: CiAi Host Adapter — Serialization Benchmarks
 
 on:
   push:
-    branches: [development]
+    branches: [development, work/experience-brotli-benchmarks]
   repository_dispatch:
     types: [serialization-development-changed]
   pull_request:
@@ -24,7 +24,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Prepare evidence directories
         run: mkdir -p evidence TestResults
@@ -359,6 +359,41 @@ jobs:
               json.dump({"schema":"ciai.benchmark-policy-summary.v1","workloads":summary},handle,indent=2)
               handle.write("\n")
           print(json.dumps(summary,indent=2))
+          PY
+
+      - name: Collect repeated Experience Brotli Release measurements
+        if: github.event_name == 'push' && github.ref == 'refs/heads/work/experience-brotli-benchmarks'
+        working-directory: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sample in 1 2 3 4 5; do
+            report_dir="../evidence/experience-brotli/release-$sample"
+            mkdir -p "$report_dir"
+            echo "Experience Brotli Release sample $sample/5"
+            dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*Brotli_*" --job Short --artifacts "$report_dir/artifacts" 2>&1 | tee "$report_dir/run.log"
+            if ! find "$report_dir/artifacts" -type f -name '*report.csv' -print -quit | grep -q .; then
+              echo "::error::Release sample $sample produced no BenchmarkDotNet CSV report."
+              exit 1
+            fi
+            if grep -Eiq 'BenchmarkDotNet.*(failed|error|exception)|There are not any benchmarks|No benchmarks found' "$report_dir/run.log"; then
+              echo "::error::Release sample $sample contains a benchmark failure."
+              exit 1
+            fi
+          done
+          python3 - <<'PY'
+          import glob, json, os
+          samples = []
+          for index in range(1, 6):
+              root = f"../evidence/experience-brotli/release-{index}"
+              reports = glob.glob(root + "/artifacts/**/*report.csv", recursive=True)
+              if not reports:
+                  raise SystemExit(f"Release sample {index} has no CSV report")
+              samples.append({"sample": index, "reports": [os.path.relpath(path, "..") for path in reports]})
+          with open("../evidence/experience-brotli/release-sample-index.json", "w", encoding="utf-8") as handle:
+              json.dump({"schema":"ciai.experience-brotli-release-samples.v1","job":"BenchmarkDotNet Short","independentLaunches":5,"samples":samples}, handle, indent=2)
+              handle.write("\n")
+          print(json.dumps(samples, indent=2))
           PY
 
       - name: Upload exact-SHA benchmark evidence
