@@ -52,11 +52,20 @@ This document follows the [Workshop Documentation Standard](https://github.com/T
 | `SER-INT-003` | `SER_INT_003_FixedWidthUInt32_Decode` | Decode the prepared fixed-width payload | Payload setup and correctness checks are outside timing |
 | `SER-INT-004` | `SER_INT_004_Uleb128UInt32_Decode` | Decode the prepared canonical ULEB128 payload | Payload setup and malformed-input checks are outside timing |
 
+| `SER-EXP-001` | `Brotli_CompressSection` | Compress one deterministic Experience-like resource/artifact payload and return stored byte count | Includes output-stream allocation and final materialization; fixture generation is outside timing |
+| `SER-EXP-002` | `Brotli_DecompressSection` | Decompress a prepared Brotli section and return logical byte count | Input fixture is prepared outside timing; output allocation and decode are timed |
+
 ## Parameters and correctness
 
 The shared fixture generates deterministic bytes with `Data[i] = (byte)(i * 31)`. The `SER-RT-001` case now validates correctness in a targeted `GlobalSetup` before timing: restored payload length and every byte must match the input, and the stream must have no unread/trailing bytes. The timed method returns the restored length as a low-cost completion signal; the byte comparison itself is intentionally outside the measured operation.
 
 The current code uses `MemoryStream`, `MemoryBinaryStream`, and `StreamBinaryStream` with several different setup and ownership costs. In particular, the original `SER-RED-001` through `SER-RED-003` cases time construction plus reading; `SER-RED-002` includes copying the entire input payload because `MemoryBinaryStream(byte[])` copies into an expandable stream, whereas `MemoryStream(byte[], writable: false)` wraps the caller's array. Do not interpret their ratio as isolated `Read`-method overhead. Use `SER-RED-004` versus `SER-RED-005` for a prepared-stream comparison, while remembering that the candidate's internal stream and baseline's fixed backing array are not identical storage implementations. `SER-DAT-001` versus `SER-DAT-002` explicitly measures wrap-vs-copy semantics, not equivalent construction work.
+
+## Experience section compression workload
+
+The `SER-EXP-001..002` family uses four logical sizes (1 KiB, 16 KiB, 256 KiB, 1 MiB), three deterministic content classes (`Repetitive`, `Structured`, `HighEntropy`), and both `.NET Brotli CompressionLevel.Fastest` and `Optimal`. Setup performs byte-for-byte round-trip validation and verifies repeatable output within the same runtime/level. BenchmarkDotNet's MemoryDiagnoser records time and managed allocation. The returned compressed length supplies the stored-size measurement; derive compression ratio as stored bytes divided by logical bytes for the exact parameter row.
+
+Interpretation limits: this is a codec-level workload, not the full Experience writer's two-pass streaming/hash/directory path. `Fastest` and `Optimal` are BCL policies, not a frozen format-level encoder contract. Results are runtime- and platform-specific. High-entropy data is intentionally included to expose expansion/CPU costs. Do not infer a writer threshold from one sample or one content class; retain reports and compare repeated runs under the same environment. The family is measurement input for choosing a conservative minimum-savings policy, not evidence that compression is always beneficial.
 
 ## Current development coverage
 

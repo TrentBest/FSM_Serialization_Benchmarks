@@ -24,7 +24,7 @@ BenchmarkDotNet cases have stable identities in the form `SER-<FAMILY>-<NNN>`. A
 Current measured families include:
 - Stream construction, read/write, materialization, positioning, and pack/unpack baselines are present on `development`.
 - Output-buffer strategies (`SER-BUF-001..005`) and primitive UInt32 encoding/decoding (`SER-INT-001..004`) are now present on `development`. Their inclusion is not evidence of a successful benchmark run until CI builds the harness and retains reports for these cases.
-- Current workload parameters are 16, 1,024, 10,000, and 100,000 bytes.
+- Current stream/buffer workload parameters are 16, 1,024, 10,000, and 100,000 bytes. The Experience Brotli family uses 1 KiB, 16 KiB, 256 KiB, and 1 MiB payloads across repetitive, structured, and high-entropy fixtures at Fastest and Optimal levels.
 
 The catalog defines the exact contracts and caveats. These primitive cases do not establish the performance of an FSM definition codec that does not yet exist.
 
@@ -76,6 +76,8 @@ A successful workflow proves that the configured cases ran and reports were reta
 
 **Harness readiness: provisional; not a package release verdict.** Four per-size controlled comparisons and CiAi policy outcomes are verified in [run #40792971412](https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/40792971412), each with five baseline and five candidate launches. The deterministic regression fixture also passed. The living evidence-flow diagram remains conceptual documentation, not a live dashboard; broader workload-family coverage and independent repeat runs remain outstanding.
 
+The new `SER-EXP-001..002` codec-level family measures section compression/decompression, managed allocations, and stored size. Its correctness checks run in setup; a passing smoke run proves the cases execute, not that a compression threshold is justified. Full repeated measurements and analysis are required before selecting a writer policy.
+
 Outstanding work includes:
 - Repeat the four-size controlled comparison on a later run to understand run-to-run noise, then extend the same per-parameter evidence pattern to additional workload families. Keep at least five valid samples per side and preserve package version explicitly in provenance.
 - Run the new setup-time byte-for-byte round-trip validation under BenchmarkDotNet; the code change is committed but still needs an actual current-branch build/run.
@@ -111,4 +113,4 @@ Outstanding work includes:
 
 ---
 
-<!-- Canonical Avatar.jpg footer not yet applied: no verified Avatar.jpg asset path was found. Do not substitute another image or invent a URL. -->
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop" width="240" /></p>
