@@ -13,7 +13,7 @@
   ],
   "branch_count": 4,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-10T12:35:03Z",
-  "workflow_run": "https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/42816973879",
-  "triggering_commit": "43c8d1e75d849cece7eecea610760c2c1fc4560a"
+  "evaluated_at": "2026-11-11T11:50:35Z",
+  "workflow_run": "https://github.com/TrentBest/FSM_Serialization_Benchmarks/actions/runs/43015253914",
+  "triggering_commit": "9c4a2944609cbe1fae952815d5a23c43044a0421"
 }
