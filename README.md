@@ -36,7 +36,7 @@ Do not compare operations with different semantics as if they were interchangeab
 
 ## 🔺 03 How
 
-Requires the .NET 8 SDK. From this repository root:
+Requires the .NET 10 SDK. From this repository root:
 
 ```sh
 dotnet restore
