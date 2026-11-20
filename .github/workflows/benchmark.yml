@@ -2,9 +2,11 @@ name: CiAi Host Adapter — Serialization Benchmarks
 
 on:
   push:
-    branches: [development]
+    branches: [development, work/experience-brotli-benchmarks]
   repository_dispatch:
     types: [serialization-development-changed]
+  pull_request:
+    branches: [development]
   workflow_dispatch:
     inputs:
       source_sha:
@@ -22,7 +24,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Prepare evidence directories
         run: mkdir -p evidence TestResults
@@ -109,7 +111,25 @@ jobs:
           dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*BinarySerializable_RoundTrip*" "*ReadPreparedPayload*" "*SER_INT_*" "*SER_BUF_*" --job Dry --artifacts "../evidence/smoke-artifacts" 2>&1 | tee ../evidence/benchmark-smoke.log
           python3 ../benchmark/scripts/validate_benchmark_smoke.py --log ../evidence/benchmark-smoke.log --report-root ../evidence/smoke-artifacts
 
+      - name: Run Experience Brotli codec smoke
+        working-directory: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ../evidence/experience-brotli
+          mkdir -p ../evidence/experience-brotli
+          dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*Brotli_*" --job Dry --artifacts "../evidence/experience-brotli/artifacts" 2>&1 | tee ../evidence/experience-brotli/smoke.log
+          if ! find ../evidence/experience-brotli/artifacts -type f -name '*report.csv' -print -quit | grep -q .; then
+            echo "::error::Experience Brotli smoke did not produce a BenchmarkDotNet CSV report."
+            exit 1
+          fi
+          if grep -Eiq 'BenchmarkDotNet.*(failed|error|exception)|There are not any benchmarks|No benchmarks found' ../evidence/experience-brotli/smoke.log; then
+            echo "::error::Experience Brotli smoke log contains a benchmark failure."
+            exit 1
+          fi
+
       - name: Collect controlled NuGet baseline and exact-source candidate measurements
+        if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
         working-directory: benchmark
         shell: bash
         run: |
@@ -208,6 +228,7 @@ jobs:
           PY
 
       - name: Verify reports and write provenance
+        if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
@@ -283,6 +304,7 @@ jobs:
           cp -R "$report_dir" evidence/benchmark-reports
           cp -R TestResults evidence/source-test-results
       - name: Verify CiAi regression verdict and host enforcement deterministically
+        if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -303,6 +325,7 @@ jobs:
           echo "CiAi deterministic regression fixture correctly returned regression."
 
       - name: Evaluate each workload with CiAi policy
+        if: github.ref == 'refs/heads/development' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -336,6 +359,41 @@ jobs:
               json.dump({"schema":"ciai.benchmark-policy-summary.v1","workloads":summary},handle,indent=2)
               handle.write("\n")
           print(json.dumps(summary,indent=2))
+          PY
+
+      - name: Collect repeated Experience Brotli Release measurements
+        if: github.event_name == 'push' && github.ref == 'refs/heads/work/experience-brotli-benchmarks'
+        working-directory: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sample in 1 2 3 4 5; do
+            report_dir="../evidence/experience-brotli/release-$sample"
+            mkdir -p "$report_dir"
+            echo "Experience Brotli Release sample $sample/5"
+            dotnet run --project "FSM_Serialization_Benchmarks.csproj" --configuration Release --no-build -p:UseSourceProject=true -- --filter "*Brotli_*" --job Short --artifacts "$report_dir/artifacts" 2>&1 | tee "$report_dir/run.log"
+            if ! find "$report_dir/artifacts" -type f -name '*report.csv' -print -quit | grep -q .; then
+              echo "::error::Release sample $sample produced no BenchmarkDotNet CSV report."
+              exit 1
+            fi
+            if grep -Eiq 'BenchmarkDotNet.*(failed|error|exception)|There are not any benchmarks|No benchmarks found' "$report_dir/run.log"; then
+              echo "::error::Release sample $sample contains a benchmark failure."
+              exit 1
+            fi
+          done
+          python3 - <<'PY'
+          import glob, json, os
+          samples = []
+          for index in range(1, 6):
+              root = f"../evidence/experience-brotli/release-{index}"
+              reports = glob.glob(root + "/artifacts/**/*report.csv", recursive=True)
+              if not reports:
+                  raise SystemExit(f"Release sample {index} has no CSV report")
+              samples.append({"sample": index, "reports": [os.path.relpath(path, "..") for path in reports]})
+          with open("../evidence/experience-brotli/release-sample-index.json", "w", encoding="utf-8") as handle:
+              json.dump({"schema":"ciai.experience-brotli-release-samples.v1","job":"BenchmarkDotNet Short","independentLaunches":5,"samples":samples}, handle, indent=2)
+              handle.write("\n")
+          print(json.dumps(samples, indent=2))
           PY
 
       - name: Upload exact-SHA benchmark evidence
